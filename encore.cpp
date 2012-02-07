@@ -28,10 +28,9 @@
 #include <boost/algorithm/string.hpp>
 
 #include "ec/EvaporativeCooling.h"
-#include "plink/perm.h"
+#include "plink/plinklibhandler.h"
 #include "plink/plink.h"
-#include "plink/sets.h"
-#include "plink/crandom.h"
+#include "plink/options.h"
 #include "plink/helper.h"
 
 #include "snprank.h"
@@ -45,9 +44,6 @@ namespace po = boost::program_options;
 ******************************/
 // plink object
 Plink* PP;
-// log filestream
-ofstream LOG;
-map<string, int> Range::groupNames;
 
 int main(int argc, char* argv[]) {
 	// command line variables
@@ -133,17 +129,6 @@ int main(int argc, char* argv[]) {
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);    
 
-	// PLINK class and permutation
-	Plink P;
-	PP = &P;
-	// Permutation class
-	if(par::random_seed == 0)
-	  CRandom::srand(time(0));
-	else
-	  CRandom::srand(par::random_seed);
-
-	Perm perm(P);
-	PP->pperm = &perm;
 	/****
 	 Help 
 	****/
@@ -182,75 +167,20 @@ int main(int argc, char* argv[]) {
 			if (fileparts.size() > 2 && i < fileparts.size() - 2) 
 				par::fileroot += ".";
 		}
-		/***********
-		 PLINK setup
-		 **********/
-		// create chromosome definition	
-		defineHumanChromosomes();
-		// open Plink log
-		LOG.open(string(outfile_pref + ".log").c_str());
-		par::famfile = par::fileroot + ".fam";
+
+		// set Plink's output file prefix
 		par::output_file_name = outfile_pref;
+		// initialize requisite Plink data structures
+		initPlink();
+
 		// read SNP file in PLINK
 		// binary file
-		if (infile.find(".bed") != string::npos) {
-			par::read_bitfile = true;
-			par::bitfilename = par::pedfile = par::fileroot + ".bed";
-			par::bitfilename_map = par::mapfile = par::fileroot + ".bim";
-			PP->readBinData();
-		}
+		if (infile.find(".bed") != string::npos) readPlBinFile(); 
 		// plaintext file
-		else if (infile.find(".ped") != string::npos) {
-			par::read_ped = true;
-			par::pedfile = par::fileroot + ".ped";
-			par::mapfile = par::fileroot + ".map";
-			PP->readData();
-		}
+		else if (infile.find(".ped") != string::npos) readPlFile();
 
-		/**********************
-		 Additional PLINK setup
-		 *********************/
-		// Set number of individuals
-		PP->n = PP->sample.size();
-
-		// Set number of pairs
-		PP->np = (int) ((double) (PP->n * (PP->n - 1)) / (double) 2);
-
-		// Total number of all (test+background) loci
-		PP->nl_all = PP->locus.size();
-
-		// Number of permutations to store
-		PP->maxr2.resize(par::replicates);
-
-		// Check for duplicate individual or SNP names
-		checkDupes(*PP);
-
-		// Determine formats for printing
-		PP->prettyPrintLengths();
-
-		// frequency and genotype filtering
-		PP->printLOG("Before frequency and genotyping pruning, there are "
-             + int2str(PP->nl_all) + " SNPs\n");
-		PP->filterSNPs();
-		PP->printLOG("After frequency and genotyping pruning, there are "
-             + int2str(PP->nl_all) + " SNPs\n");
-
-		// reprint counts
-		summaryBasics(*PP);
-
-		// Any null allele codes (monomorhpics)?
-
-		for(int l = 0; l < PP->nl_all; l++) {
-			if(PP->locus[l]->allele1 == "")
-			PP->locus[l]->allele1 = "0";
-		}
-
-		// Set statistics
-		Set S(PP->snpset);
-		PP->pS = &S;
-
-		// marker scaffold
-		makeScaffold(*PP);
+		// additional PLINK setup
+		initPlStats();
 	}
 
 	/**********
@@ -425,7 +355,7 @@ int main(int argc, char* argv[]) {
 		if (vm.count("linear"))
 			par::assoc_glm = true;
 		par::assoc_test = true;	
-		PP->calcAssociationWithPermutation(perm);
+		PP->calcAssociationWithPermutation(*PP->pperm);
 	}
 
 	// LD-based pruning
@@ -454,20 +384,4 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-////////////////////////////////
-// Clean-up
-
-void Plink::cleanUp() {
-
-  for(int i = 0; i < sample.size(); i++)
-    delete sample[i];
-
-  for(int l = 0; l < locus.size(); l++)
-    delete locus[l];
-
-  if(par::SNP_major)
-    for(int l = 0; l < SNP.size(); l++)
-      delete SNP[l];
-
-}
 
