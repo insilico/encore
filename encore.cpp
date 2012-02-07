@@ -39,9 +39,9 @@
 using namespace boost;
 namespace po = boost::program_options;
 
-/******************************
- required plink data structures
-******************************/
+/********************************
+ * required plink data structures
+ *******************************/
 // plink object
 Plink* PP;
 
@@ -73,19 +73,19 @@ int main(int argc, char* argv[]) {
 		 "Prefix to use for all output files"
 		)
 		("snprank,s",
-		 "Perform SNPrank analysis"
+		 "Perform SNPrank analysis *mode*"
 		)
 			("gamma,g",
 			 po::value<double>(&gamma)->default_value(0.85, "0.85"),
 			 "Damping factor (default is 0.85)"
 			)
 		("regain,r", 
-		 "Calculate regression GAIN"
+		 "Calculate regression GAIN *mode*"
 		)
 			("compress-matrices", 
 			 "Write binary (compressed) reGAIN matrices"
 			)
-			("sif-threshhold",
+			("sif-threshold",
 			 po::value<double>(&sif_thresh)->default_value(0.05, "0.05"),
 			 "Numerical cutoff for SIF file interaction scores"
 			)
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 			 "FDR value for BH method"
 			)
 		("ec,e", 
-		 "Perform Evaporative Cooling (EC) analysis"
+		 "Perform Evaporative Cooling (EC) analysis *mode*"
 		)
 			("ec-algorithm", po::value<string>(&ec_algo),
 			 "EC ML algorithm (all|rf|rj)"
@@ -114,13 +114,13 @@ int main(int argc, char* argv[]) {
 		 "Include alternate phenotype file in analysis"
 		)
 		("assoc", 
-		 "Run Case/control, QT association tests" 
+		 "Run Case/control, QT association tests *mode*"
 		)
 		("linear", 
-		 "Run linear regression model" 
+		 "Run linear regression model *mode*"
 		)
 		("ld-prune,l",
-		 "Linkage disequilibrium (LD) pruning"
+		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
 		("help,h", "display this help screen")
 	;
@@ -129,17 +129,34 @@ int main(int argc, char* argv[]) {
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);    
 
-	/****
-	 Help 
-	****/
-	if (vm.count("help")) {
+	/********************************
+	 * Help
+	 *******************************/
+	 if (vm.count("help")) {
 		cout << desc << endl;
 		return 1;
 	}
 
-	/**********
-	 Input file
-	**********/
+	/*********************************
+	 * Validate only one mode passed
+	 ********************************/
+	int modes = 0;
+	for (po::variables_map::iterator iter = vm.begin(); iter != vm.end(); ++iter) {
+		if (iter->first == "snprank" || iter->first == "regain" ||
+				iter->first == "ec" || iter->first == "assoc" ||
+				iter->first == "linear" || iter->first == "ld-prune") {
+					modes++;
+				}
+	}
+
+	if (modes > 1) {
+			cerr << "Error: Only one mode may be specified" << endl << desc << endl;
+			return 1;
+	}
+
+	/********************************
+	 * Input file
+	 *******************************/
 	// require input file
 	if (!vm.count("input-file")) {
 		cerr << "Error: Must specify input file" << 
@@ -183,9 +200,9 @@ int main(int argc, char* argv[]) {
 		initPlStats();
 	}
 
-	/**********
-	 Covar file
-	**********/
+	/********************************
+	 * Covar file
+	 *******************************/
 	if (vm.count("covarfile")){
 		// validate that covar file is used with proper modes
 		if (!(vm.count("regain") || vm.count("linear"))) {
@@ -210,9 +227,9 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	/***********
-	 Pheno file
-	***********/
+	/********************************
+	 * Pheno file
+	 *******************************/
 	if (vm.count("phenofile")) {
 		// alternate phenotype validation
 		if (vm.count("snprank")) {
@@ -223,7 +240,7 @@ int main(int argc, char* argv[]) {
 
 		// ensure alternate phenotype file exists
 		else if (!boost::filesystem::exists(phenofile)) {
-			cerr << "Alernate phenotype file " << phenofile << " does not exist" << endl;	
+			cerr << "Alernate phenotype file " << phenofile << " does not exist" << endl;
 			return 1;
 		}
 
@@ -235,9 +252,9 @@ int main(int argc, char* argv[]) {
 			}
 	}
 
-	/*************
-	 Extract file
-	 ************/
+	/********************************
+	 * Extract file
+	 *******************************/
 	if (vm.count("extract")) {
 		// extract validation
 		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
@@ -248,7 +265,7 @@ int main(int argc, char* argv[]) {
 
 		// ensure extract file exists
 		else if (!boost::filesystem::exists(extrfile)) {
-			cerr << "Extract file " << extrfile << " does not exist" << endl;	
+			cerr << "Extract file " << extrfile << " does not exist" << endl;
 			return 1;
 		}
 
@@ -260,9 +277,48 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	/*******************************
-	 Check primary mode of operation
-	 ******************************/
+	/*********************************
+	 * Validate mode sub-options
+	 ********************************/
+	if (vm.count("gamma") && !vm.count("snprank")) {
+			cerr << "--gamma must be used with --snprank" << desc << endl;
+			return 1;
+	}
+
+	if (vm.count("compress-matrices") && !vm.count("regain")) {
+			cerr << "--compress-matrices must be used with --regain" << desc << endl;
+			return 1;
+	}
+
+	if (vm.count("sif-threshold") && !vm.count("regain")) {
+			cerr << "--sif-threshold must be used with --regain" << desc << endl;
+			return 1;
+	}
+
+	if (vm.count("fdr-prune") && !vm.count("regain")) {
+			cerr << "--fdr-prune must be used with --regain" << desc << endl;
+			return 1;
+	}
+
+	if (vm.count("fdr") && !vm.count("regain")) {
+			cerr << "--fdr must be used with --regain" << desc << endl;
+			return 1;
+	}
+
+	if (vm.count("ec-algorithm") && !vm.count("ec")) {
+			cerr << "ec-algorithm must be used with --ec" << desc << endl;
+			return 1;
+	}
+
+	if (vm.count("ec-snp-metric") && !vm.count("ec")) {
+			cerr << "ec-snp-metric must be used with --ec" << desc << endl;
+			return 1;
+	}
+
+
+	/*********************************
+	 * Check primary mode of operation
+	 ********************************/
 	// SNPrank
 	if (vm.count("snprank")) {
 		SNPrank* sr = new SNPrank(infile);
