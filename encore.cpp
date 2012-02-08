@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);    
-
+	
 	/********************************
 	 * Help
 	 *******************************/
@@ -281,14 +281,14 @@ int main(int argc, char* argv[]) {
 	/*********************************
 	 * Validate mode sub-options
 	 ********************************/
-	if (vm.count("gamma") && !vm.count("snprank")) {
+	if ((gamma != 0.85) && !vm.count("snprank")) {
 			cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
 				desc << endl;
 			return 1;
 	}
 
 
-	if (vm.count("sif-threshold") && !vm.count("regain")) {
+	if ((sif_thresh != 0.05) && !vm.count("regain")) {
 			cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
 				desc << endl;
 			return 1;
@@ -300,7 +300,7 @@ int main(int argc, char* argv[]) {
 			return 1;
 	}
 
-	if (vm.count("fdr") && !vm.count("regain")) {
+	if ((fdr != 0.5) && !vm.count("regain")) {
 			cerr << "Error: --fdr must be used with --regain" << endl << endl <<
 				desc << endl;
 			return 1;
