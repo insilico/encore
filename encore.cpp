@@ -63,10 +63,9 @@ int main(int argc, char* argv[]) {
 	string ec_sm = "gm";
 		   
 	po::options_description desc("Encore - a tool for analysis of GWAS and other "
-			"biological data.\nUsage encore -i snpdata.ped [mode] -o output-prefix");
+			"biological data.\nUsage:  encore -i snpdata.ped [mode] -o output-prefix");
 	desc.add_options()
-		("input-file,i", 
-		 po::value<string>(&infile), 
+		("input-file,i", po::value<string>(&infile),
 		 "Input GWAS file (.bed or .ped) or GAIN/reGAIN matrix (tab- or comma-separated)"
 		)
 		("output-prefix,o", po::value<string>(&outfile_pref),
@@ -75,8 +74,7 @@ int main(int argc, char* argv[]) {
 		("snprank,s",
 		 "Perform SNPrank analysis *mode*"
 		)
-			("gamma,g",
-			 po::value<double>(&gamma)->default_value(0.85, "0.85"),
+			("gamma,g", po::value<double>(&gamma)->default_value(0.85, "0.85"),
 			 "Damping factor (default is 0.85)"
 			)
 		("regain,r", 
@@ -85,8 +83,7 @@ int main(int argc, char* argv[]) {
 			("compress-matrices", 
 			 "Write binary (compressed) reGAIN matrices"
 			)
-			("sif-threshold",
-			 po::value<double>(&sif_thresh)->default_value(0.05, "0.05"),
+			("sif-threshold", po::value<double>(&sif_thresh)->default_value(0.05, "0.05"),
 			 "Numerical cutoff for SIF file interaction scores"
 			)
 			("fdr-prune", 
@@ -150,7 +147,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (modes > 1) {
-			cerr << "Error: Only one mode may be specified" << endl << desc << endl;
+			cerr << "Error: Only one mode may be specified" << endl << endl << desc << endl;
 			return 1;
 	}
 
@@ -159,14 +156,13 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	// require input file
 	if (!vm.count("input-file")) {
-		cerr << "Error: Must specify input file" << 
-			endl << desc << endl;
+		cerr << "Error: Must specify input file" << endl << endl << desc << endl;
 		return 1;
 	}
 
 	// ensure SNP/reGAIN file exists
 	else if (!boost::filesystem::exists(infile)) {
-		cerr << "Input file " << infile << " does not exist" << endl;	
+		cerr << "Error: Input file " << infile << " does not exist" << endl;
 		return 1;
 	}
 
@@ -206,14 +202,14 @@ int main(int argc, char* argv[]) {
 	if (vm.count("covarfile")){
 		// validate that covar file is used with proper modes
 		if (!(vm.count("regain") || vm.count("linear"))) {
-			cerr << "Error: Covariate file may only be used with --regain or --linear" 
+			cerr << "Error: Covariate file may only be used with --regain or --linear"
 				<< endl << desc << endl;
 			return 1;
 		}
 
 		// ensure covariate file exists
 		else if (!boost::filesystem::exists(covarfile)) {
-			cerr << "Covariate file " << covarfile << " does not exist" << endl;	
+			cerr << "Error: Covariate file " << covarfile << " does not exist" << endl;
 			return 1;
 		}
 
@@ -221,7 +217,7 @@ int main(int argc, char* argv[]) {
 		else {
 			par::covar_file = true;
 			if(!PP->readCovListFile()){
-				cerr << "Problem reading the covariates" << endl;
+				cerr << "Error: Problem reading the covariates" << endl;
 				return 1;
 			}
 		}
@@ -240,7 +236,7 @@ int main(int argc, char* argv[]) {
 
 		// ensure alternate phenotype file exists
 		else if (!boost::filesystem::exists(phenofile)) {
-			cerr << "Alernate phenotype file " << phenofile << " does not exist" << endl;
+			cerr << "Error: Alernate phenotype file " << phenofile << " does not exist" << endl;
 			return 1;
 		}
 
@@ -248,7 +244,7 @@ int main(int argc, char* argv[]) {
 		else {
 			par::pheno_file = true;
 			if(!PP->readPhenoFile())
-				cerr << "Problem reading the alternate phenotype file" << endl;
+				cerr << "Error: Problem reading the alternate phenotype file" << endl;
 			}
 	}
 
@@ -265,7 +261,7 @@ int main(int argc, char* argv[]) {
 
 		// ensure extract file exists
 		else if (!boost::filesystem::exists(extrfile)) {
-			cerr << "Extract file " << extrfile << " does not exist" << endl;
+			cerr << "Error: Extract file " << extrfile << " does not exist" << endl;
 			return 1;
 		}
 
@@ -281,37 +277,39 @@ int main(int argc, char* argv[]) {
 	 * Validate mode sub-options
 	 ********************************/
 	if (vm.count("gamma") && !vm.count("snprank")) {
-			cerr << "--gamma must be used with --snprank" << desc << endl;
+			cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
+			desc << endl;
 			return 1;
 	}
 
-	if (vm.count("compress-matrices") && !vm.count("regain")) {
-			cerr << "--compress-matrices must be used with --regain" << desc << endl;
-			return 1;
-	}
 
 	if (vm.count("sif-threshold") && !vm.count("regain")) {
-			cerr << "--sif-threshold must be used with --regain" << desc << endl;
+			cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
+			desc << endl;
 			return 1;
 	}
 
 	if (vm.count("fdr-prune") && !vm.count("regain")) {
-			cerr << "--fdr-prune must be used with --regain" << desc << endl;
+			cerr << "Error: --fdr-prune must be used with --regain" << endl << endl <<
+			desc << endl;
 			return 1;
 	}
 
 	if (vm.count("fdr") && !vm.count("regain")) {
-			cerr << "--fdr must be used with --regain" << desc << endl;
+			cerr << "Error: --fdr must be used with --regain" << endl << endl <<
+			desc << endl;
 			return 1;
 	}
 
 	if (vm.count("ec-algorithm") && !vm.count("ec")) {
-			cerr << "ec-algorithm must be used with --ec" << desc << endl;
+			cerr << "Error: ec-algorithm must be used with --ec" << endl << endl <<
+			desc << endl;
 			return 1;
 	}
 
 	if (vm.count("ec-snp-metric") && !vm.count("ec")) {
-			cerr << "ec-snp-metric must be used with --ec" << desc << endl;
+			cerr << "Error: ec-snp-metric must be used with --ec" << endl << endl <<
+			desc << endl;
 			return 1;
 	}
 
@@ -426,9 +424,9 @@ int main(int argc, char* argv[]) {
 	}
 
 	else {
-		cerr << "Error:  Invalid command mode, must be one of:" << endl 
-					<< " --snprank, --regain, --ec, --assoc, --linear, --ldprune" << desc 
-					<< endl;
+		cerr << "Error: Invalid command mode, must be one of:" << endl
+					<< " --snprank, --regain, --ec, --assoc, --linear, --ldprune" << endl
+					<< endl << desc << endl;
 
 		// Plink exit
 		shutdown();
