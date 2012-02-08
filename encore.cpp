@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 		 "Perform SNPrank analysis *mode*"
 		)
 			("gamma,g", po::value<double>(&gamma)->default_value(0.85, "0.85"),
-			 "Damping factor (default is 0.85)"
+			 "Damping factor"
 			)
 		("regain,r", 
 		 "Calculate regression GAIN *mode*"
