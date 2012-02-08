@@ -1,0 +1,21 @@
+# the built executable
+encore
+# vim swap files
+*.swp
+# configure output
+config.log
+config.status
+# object files
+*.o
+*.lo
+# libraries
+*.la
+# autoconf build directories
+.deps
+.libs
+# autotools files
+Makefile
+libtool
+autom4te.cache
+# CTags files for vim
+tags
