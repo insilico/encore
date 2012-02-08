@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Covar file
 	 *******************************/
-	if (vm.count("covarfile")){
+	if (vm.count("covar")){
 		// validate that covar file is used with proper modes
 		if (!(vm.count("regain") || vm.count("linear"))) {
 			cerr << "Error: Covariate file may only be used with --regain or --linear"
@@ -216,6 +216,8 @@ int main(int argc, char* argv[]) {
 		// read covariate file using PLINK
 		else {
 			par::covar_file = true;
+			par::clist = true;
+			par::clist_filename = covarfile;
 			if(!PP->readCovListFile()){
 				cerr << "Error: Problem reading the covariates" << endl;
 				return 1;
@@ -226,7 +228,7 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Pheno file
 	 *******************************/
-	if (vm.count("phenofile")) {
+	if (vm.count("pheno")) {
 		// alternate phenotype validation
 		if (vm.count("snprank")) {
 			cerr << "Error: Alternate phenotype file cannot be used with "\
@@ -243,6 +245,7 @@ int main(int argc, char* argv[]) {
 		// read alternate phenotype file using PLINK
 		else {
 			par::pheno_file = true;
+			par::pheno_filename = phenofile;
 			if(!PP->readPhenoFile())
 				cerr << "Error: Problem reading the alternate phenotype file" << endl;
 			}
