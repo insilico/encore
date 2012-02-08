@@ -119,7 +119,9 @@ int main(int argc, char* argv[]) {
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
-		("help,h", "display this help screen")
+		("help,h", 
+		 "display this help screen"
+		)
 	;
 
 	po::variables_map vm;
@@ -281,38 +283,38 @@ int main(int argc, char* argv[]) {
 	 ********************************/
 	if (vm.count("gamma") && !vm.count("snprank")) {
 			cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
-			desc << endl;
+				desc << endl;
 			return 1;
 	}
 
 
 	if (vm.count("sif-threshold") && !vm.count("regain")) {
 			cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
-			desc << endl;
+				desc << endl;
 			return 1;
 	}
 
 	if (vm.count("fdr-prune") && !vm.count("regain")) {
 			cerr << "Error: --fdr-prune must be used with --regain" << endl << endl <<
-			desc << endl;
+				desc << endl;
 			return 1;
 	}
 
 	if (vm.count("fdr") && !vm.count("regain")) {
 			cerr << "Error: --fdr must be used with --regain" << endl << endl <<
-			desc << endl;
+				desc << endl;
 			return 1;
 	}
 
 	if (vm.count("ec-algorithm") && !vm.count("ec")) {
 			cerr << "Error: ec-algorithm must be used with --ec" << endl << endl <<
-			desc << endl;
+				desc << endl;
 			return 1;
 	}
 
 	if (vm.count("ec-snp-metric") && !vm.count("ec")) {
 			cerr << "Error: ec-snp-metric must be used with --ec" << endl << endl <<
-			desc << endl;
+				desc << endl;
 			return 1;
 	}
 
