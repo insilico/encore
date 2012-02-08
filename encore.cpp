@@ -281,14 +281,14 @@ int main(int argc, char* argv[]) {
 	/*********************************
 	 * Validate mode sub-options
 	 ********************************/
-	if ((gamma != 0.85) && !vm.count("snprank")) {
+	if (!vm["gamma"].defaulted() && !vm.count("snprank")) {
 			cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
 				desc << endl;
 			return 1;
 	}
 
 
-	if ((sif_thresh != 0.05) && !vm.count("regain")) {
+	if (!vm["sif_thresh"].defaulted() && !vm.count("regain")) {
 			cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
 				desc << endl;
 			return 1;
@@ -300,7 +300,7 @@ int main(int argc, char* argv[]) {
 			return 1;
 	}
 
-	if ((fdr != 0.5) && !vm.count("regain")) {
+	if (!vm["fdr"].defaulted() && !vm.count("regain")) {
 			cerr << "Error: --fdr must be used with --regain" << endl << endl <<
 				desc << endl;
 			return 1;
