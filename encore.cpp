@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
 	}
 
 
-	if (!vm["sif_thresh"].defaulted() && !vm.count("regain")) {
+	if (!vm["sif-threshold"].defaulted() && !vm.count("regain")) {
 			cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
 				desc << endl;
 			return 1;
