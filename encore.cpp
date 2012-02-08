@@ -137,6 +137,18 @@ int main(int argc, char* argv[]) {
 	}
 
 	/*********************************
+	 * Validate mode 
+	 ********************************/
+	if (!(vm.count("snprank") || vm.count("regain") || vm.count("ec") ||
+				vm.count("assoc") || vm.count("linear") || vm.count("ld-prune"))) {
+		cerr << "Error: Invalid command mode, must be one of:" << endl
+			<< " --snprank, --regain, --ec, --assoc, --linear, --ld-prune" << endl
+			<< endl << desc << endl;
+
+		return 1;
+	}
+
+	/*********************************
 	 * Validate only one mode passed
 	 ********************************/
 	int modes = 0;
@@ -428,15 +440,6 @@ int main(int argc, char* argv[]) {
 		PP->pruneLD();
 	}
 
-	else {
-		cerr << "Error: Invalid command mode, must be one of:" << endl
-					<< " --snprank, --regain, --ec, --assoc, --linear, --ldprune" << endl
-					<< endl << desc << endl;
-
-		// Plink exit
-		shutdown();
-		return 1;
-	}
 
 	// Plink exit
 	shutdown();
