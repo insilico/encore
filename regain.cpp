@@ -86,11 +86,6 @@ Regain::Regain(bool compr, double sifthr, bool fdrpr) {
 
 // construct regression models for each pair of SNPs
 void Regain::run() {
-
-  // Use fast aff coding
-  if(par::bt)
-    affCoding(*PP);
-
   // Count how many items in the SET1
   int e1, e2;
 #ifdef _OPENMP
