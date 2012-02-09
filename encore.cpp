@@ -422,7 +422,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Case/Control, QT association test OR linear model
-	else if (vm.count("assoc")) {
+	else if (vm.count("assoc") || vm.count("linear")) {
 		if (vm.count("linear"))
 			par::assoc_glm = true;
 		par::assoc_test = true;	
@@ -430,7 +430,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// LD-based pruning
-	else if (vm.count("ldprune")) {
+	else if (vm.count("ld-prune")) {
 		par::prune_ld = true;
 		par::prune_ld_pairwise = true;
 		par::prune_ld_win = 50;
