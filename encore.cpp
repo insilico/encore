@@ -39,11 +39,12 @@
 using namespace boost;
 namespace po = boost::program_options;
 
+// Plink object
+extern Plink* PP;
+
 /********************************
  * required plink data structures
  *******************************/
-// plink object
-Plink* PP;
 
 int main(int argc, char* argv[]) {
 	// command line variables
@@ -127,6 +128,8 @@ int main(int argc, char* argv[]) {
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);    
+
+	PlinkHandler* ph;
 	
 	/********************************
 	 * Help
@@ -198,16 +201,16 @@ int main(int argc, char* argv[]) {
 		// set Plink's output file prefix
 		par::output_file_name = outfile_pref;
 		// initialize requisite Plink data structures
-		initPlink();
+		ph = new PlinkHandler();
 
 		// read SNP file in PLINK
 		// binary file
-		if (infile.find(".bed") != string::npos) readPlBinFile(); 
+		if (infile.find(".bed") != string::npos) ph->readPlBinFile(); 
 		// plaintext file
-		else if (infile.find(".ped") != string::npos) readPlFile();
+		else if (infile.find(".ped") != string::npos) ph->readPlFile();
 
 		// additional PLINK setup
-		initPlStats();
+		ph->initPlStats();
 	}
 
 	/********************************
@@ -423,8 +426,7 @@ int main(int argc, char* argv[]) {
 
 	// Case/Control, QT association test OR linear model
 	else if (vm.count("assoc") || vm.count("linear")) {
-		if (vm.count("linear"))
-			par::assoc_glm = true;
+		if (vm.count("linear")) par::assoc_glm = true;
 		par::assoc_test = true;	
 		PP->calcAssociationWithPermutation(*PP->pperm);
 	}
