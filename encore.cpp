@@ -55,6 +55,8 @@ int main(int argc, char* argv[]) {
 	string covarfile = "";
 	string phenofile = "";
 	string extrfile = "";
+	string remfile = "";
+	string keepfile = "";
 	//snprank
 	double gamma = 0.85;	
 	// reGAIN
@@ -105,6 +107,15 @@ int main(int argc, char* argv[]) {
 			)
 		("extract", po::value<string>(&extrfile),
 		 "Extract list of SNPs from specified file"
+		)
+		("remove", po::value<string>(&remfile),
+		 "Remove list of individuals from specified file"
+		)
+		("keep", po::value<string>(&keepfile),
+		 "Keep list of individuals from specified file"
+		)
+		("prune",
+		 "Remove individuals with missing phenotypes"
 		)
 		("covar", po::value<string>(&covarfile),
 		 "Include covariate file in analysis"
@@ -299,6 +310,22 @@ int main(int argc, char* argv[]) {
 	}
 
 	/********************************
+	 * Prune
+	 *******************************/
+	if (vm.count("prune")) {
+		// prune validation
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+			cerr << "Error: prune file cannot be used with "\
+				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+			return 1;
+		}
+
+		par::ignore_phenotypes = false;
+		// Remove any individuals with missing phenotypes
+		removeMissingPhenotypes(*PP);
+	}
+
+	/********************************
 	 * Extract file
 	 *******************************/
 	if (vm.count("extract")) {
@@ -323,6 +350,57 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
+	/********************************
+	 * Remove file
+	 *******************************/
+	if (vm.count("remove")) {
+		// remove validation
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+			cerr << "Error: Remove file cannot be used with "\
+				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+			return 1;
+		}
+
+		// ensure remove file exists
+		else if (!boost::filesystem::exists(remfile)) {
+			cerr << "Error: Remove file " << remfile << " does not exist" << endl;
+			return 1;
+		}
+
+		// read remove file individuals using PLINK
+		else {
+			par::remove_indiv = true;
+			par::remove_indiv_list = remfile;
+			PP->removeIndividuals(false);
+		}
+	}
+
+	/********************************
+	 * Keep file
+	 *******************************/
+	if (vm.count("keep")) {
+		// keep validation
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+			cerr << "Error: keep file cannot be used with "\
+				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+			return 1;
+		}
+
+		// ensure keep file exists
+		else if (!boost::filesystem::exists(keepfile)) {
+			cerr << "Error: keep file " << keepfile << " does not exist" << endl;
+			return 1;
+		}
+
+		// read keep file individuals using PLINK
+		else {
+			par::keep_indiv = true;
+			par::keep_indiv_list = keepfile;
+			PP->removeIndividuals(true);
+		}
+	}
+
+
 	/*********************************
 	 * Validate mode sub-options
 	 ********************************/
