@@ -314,9 +314,9 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	if (vm.count("prune")) {
 		// prune validation
-		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ld-prune")) {
 			cerr << "Error: prune file cannot be used with "\
-				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+				"--snprank, --ec, or --ld-prune" << endl << desc << endl;
 			return 1;
 		}
 
@@ -330,9 +330,9 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	if (vm.count("extract")) {
 		// extract validation
-		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ld-prune")) {
 			cerr << "Error: Extract file cannot be used with "\
-				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+				"--snprank, --ec, or --ld-prune" << endl << desc << endl;
 			return 1;
 		}
 
@@ -355,9 +355,9 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	if (vm.count("remove")) {
 		// remove validation
-		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ld-prune")) {
 			cerr << "Error: Remove file cannot be used with "\
-				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+				"--snprank, --ec, or --ld-prune" << endl << desc << endl;
 			return 1;
 		}
 
@@ -380,9 +380,9 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	if (vm.count("keep")) {
 		// keep validation
-		if (vm.count("snprank") || vm.count("ec") || vm.count("ldprune")) {
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ld-prune")) {
 			cerr << "Error: keep file cannot be used with "\
-				"--snprank, --ec, or --ldprune" << endl << desc << endl;
+				"--snprank, --ec, or --ld-prune" << endl << desc << endl;
 			return 1;
 		}
 
