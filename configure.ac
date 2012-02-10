@@ -105,7 +105,6 @@ AC_ARG_WITH([openmp],
 	[],
 	[with_openmp=yes])
 AS_IF([test "x$with_openmp" = xyes],
-	# FIXME: Replace `main' with a function in `-lgomp':
 	[AC_CHECK_LIB([gomp], [GOMP_parallel_loop_dynamic_start],
 		[],
 		[if test "x$with_openmp" != xcheck; then
@@ -114,24 +113,12 @@ AS_IF([test "x$with_openmp" = xyes],
 		fi
 		], [])])
 
-# BOOST filesystem
-AC_CHECK_LIB([boost_filesystem], [main], 
-	[],
-	AC_MSG_ERROR(test for boost_filesystem failed)
-)
-
-# BOOST system
-AC_CHECK_LIB([boost_system], [main], 
-	[],
-	AC_MSG_ERROR(test for boost_system failed)
-)
-
-# BOOST program_options
-AC_SEARCH_LIBS([_ZNK5boost15program_options19options_description7optionsEv],
-				[boost_program_options boost_program_options-mt], 
-	[],
-	AC_MSG_ERROR([test for boost_program_options failed])
-)
+# boost.m4
+BOOST_REQUIRE([1.34])
+BOOST_FIND_HEADER(boost/program_options.hpp, AC_MSG_ERROR([could not find required headers of Boost c++. Install boost c++ libraries.],))
+BOOST_PROGRAM_OPTIONS
+BOOST_SYSTEM
+BOOST_FILESYSTEM
 
 # Random Jungle
 AC_CHECK_LIB([rjungle], [main])
