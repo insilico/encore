@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <boost/program_options.hpp>
 #include <boost/program_options/positional_options.hpp>
 #include <boost/filesystem.hpp>
@@ -117,6 +118,21 @@ int main(int argc, char* argv[]) {
 		("linear", 
 		 "Run linear regression model *mode*"
 		)
+		("model",
+		 "Run full model *mode*"
+		)
+		("model-trend",
+		 "Run CA trend model *mode*"
+		)
+		("model-gen",
+		 "Run GENO model *mode*"
+		)
+		("model-dom",
+		 "Run DOM model *mode*"
+		)
+		("model-rec",
+		 "Run REC model *mode*"
+		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
@@ -129,6 +145,20 @@ int main(int argc, char* argv[]) {
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);    
 
+	const char* margs[] = {
+		"snprank",
+		"regain",
+		"ec",
+		"assoc",
+		"linear",
+		"model",
+		"model-trend",
+		"model-gen",
+		"model-dom",
+		"model-rec",
+		"ld-prune"
+	};
+	vector<string> modes(margs, margs + 11);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -140,30 +170,30 @@ int main(int argc, char* argv[]) {
 	}
 
 	/*********************************
-	 * Validate mode 
+	 * Validate only one mode passed
 	 ********************************/
-	if (!(vm.count("snprank") || vm.count("regain") || vm.count("ec") ||
-				vm.count("assoc") || vm.count("linear") || vm.count("ld-prune"))) {
-		cerr << "Error: Invalid command mode, must be one of:" << endl
-			<< " --snprank, --regain, --ec, --assoc, --linear, --ld-prune" << endl
-			<< endl << desc << endl;
+	int nummodes = 0;
+	for (po::variables_map::iterator iter = vm.begin(); iter != vm.end(); ++iter)
+		if (find(modes.begin(), modes.end(), iter->first) != modes.end()) nummodes++;
 
+	if (nummodes == 0) {
+		cerr << "Error: Invalid command mode, must be one of:" << endl <<
+			"--snprank" << endl <<
+			"--regain" << endl <<
+			"--ec" << endl <<
+			"--assoc" << endl <<
+			"--linear" << endl <<
+			"--model" << endl <<
+			"--model-trend" << endl <<
+			"--model-gen" << endl <<
+			"--model-dom" << endl <<
+			"--model-rec" << endl <<
+			"--ld-prune" <<	endl <<
+			endl <<	desc <<	endl;
 		return 1;
 	}
 
-	/*********************************
-	 * Validate only one mode passed
-	 ********************************/
-	int modes = 0;
-	for (po::variables_map::iterator iter = vm.begin(); iter != vm.end(); ++iter) {
-		if (iter->first == "snprank" || iter->first == "regain" ||
-				iter->first == "ec" || iter->first == "assoc" ||
-				iter->first == "linear" || iter->first == "ld-prune") {
-					modes++;
-				}
-	}
-
-	if (modes > 1) {
+	else if (nummodes > 1) {
 			cerr << "Error: Only one mode may be specified" << endl << endl << desc << endl;
 			return 1;
 	}
@@ -424,10 +454,32 @@ int main(int argc, char* argv[]) {
 		delete ec;
 	}
 
-	// Case/Control, QT association test OR linear model
-	else if (vm.count("assoc") || vm.count("linear")) {
-		if (vm.count("linear")) par::assoc_glm = true;
+	// Association tests and models
+	else if (vm.count("assoc") || vm.count("linear") ||
+			vm.count("model") || vm.count("--trend") ||
+			vm.count("model-trend") || vm.count("model-gen") ||
+			vm.count("model-dom") || vm.count("model-rec")) {
+
 		par::assoc_test = true;	
+
+		if (vm.count("model") || vm.count("trend") ||
+			vm.count("model-dom") || vm.count("model-rec") ||
+			vm.count("model-trend") || vm.count("model-gen"))
+				par::full_model_assoc = true;
+
+		if (vm.count("trend")) {
+			par::trend_only = true;
+			par::model_perm_trend = true;
+		}
+		else {
+			if (vm.count("--model-gen")) par::model_perm_gen = true;
+			else if(vm.count("--model-dom")) par::model_perm_dom = true;
+			else if(vm.count("--model-rec")) par::model_perm_rec = true;
+			else if(vm.count("--model-trend")) par::model_perm_trend = true;
+			else par::model_perm_best = true;
+		}
+
+		if (vm.count("linear")) par::assoc_glm = true;
 		PP->calcAssociationWithPermutation(*PP->pperm);
 	}
 
@@ -442,6 +494,90 @@ int main(int argc, char* argv[]) {
 		PP->pruneLD();
 	}
 
+	// remove
+	else if (vm.count("remove")) {
+
+	}
+
+	// keep
+	else if (vm.count("keep")) {
+
+	}
+
+	// prune
+	else if (vm.count("prune")) {
+
+	}
+
+	// freq
+	else if (vm.count("freq")) {
+
+	}
+
+	// counts
+	else if (vm.count("counts")) {
+
+	}
+
+	// missing
+	else if (vm.count("missing")) {
+
+	}
+
+	// maf
+	else if (vm.count("maf")) {
+
+	}
+
+	// geno
+	else if (vm.count("geno")) {
+
+	}
+
+	// mind
+	else if (vm.count("mind")) {
+
+	}
+
+	// hwe
+	else if (vm.count("hwe")) {
+
+	}
+
+	// hwe2
+	else if (vm.count("hwe2")) {
+
+	}
+
+	// r
+	else if (vm.count("r")) {
+
+	}
+
+	// r2
+	else if (vm.count("r2")) {
+
+	}
+
+	// no-sex
+	else if (vm.count("no-sex")) {
+
+	}
+
+	// map3
+	else if (vm.count("map3")) {
+
+	}
+
+	// no-fid
+	else if (vm.count("no-fid")) {
+
+	}
+
+	// allow-no-sex
+	else if (vm.count("allow-no-sex")) {
+
+	}
 
 	// Plink exit
 	shutdown();
