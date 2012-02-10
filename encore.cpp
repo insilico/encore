@@ -144,6 +144,12 @@ int main(int argc, char* argv[]) {
 		("model-rec",
 		 "Run REC model *mode*"
 		)
+		("freq",
+		 "Allele frequencies *mode*"
+		)
+		("counts",
+		 "Modifies --freq to report actual allele counts"
+		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
@@ -167,9 +173,10 @@ int main(int argc, char* argv[]) {
 		"model-gen",
 		"model-dom",
 		"model-rec",
-		"ld-prune"
+		"ld-prune",
+		"freq",
 	};
-	vector<string> modes(margs, margs + 11);
+	vector<string> modes(margs, margs + 12);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -250,9 +257,20 @@ int main(int argc, char* argv[]) {
 		// plaintext file
 		else if (infile.find(".ped") != string::npos) ph->readPlFile();
 
-		// additional PLINK setup
-		ph->initPlStats();
 	}
+
+	/********************************
+	 * Allele frequencies
+	 *******************************/
+	if (vm.count("freq")) {
+		par::af_write = true;
+
+		// display MAF counts instead of freqs?
+		if(vm.count("counts")) par::af_count = true;
+	}
+
+	// additional PLINK setup
+	ph->initPlStats();
 
 	/********************************
 	 * Covar file
@@ -572,30 +590,6 @@ int main(int argc, char* argv[]) {
 		PP->pruneLD();
 	}
 
-	// remove
-	else if (vm.count("remove")) {
-
-	}
-
-	// keep
-	else if (vm.count("keep")) {
-
-	}
-
-	// prune
-	else if (vm.count("prune")) {
-
-	}
-
-	// freq
-	else if (vm.count("freq")) {
-
-	}
-
-	// counts
-	else if (vm.count("counts")) {
-
-	}
 
 	// missing
 	else if (vm.count("missing")) {
