@@ -8,7 +8,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
-AM_CXXFLAGS = -D_FILE_OFFSET_BITS=64 -Dfopen64=fopen @OS_CXX@
+AM_CXXFLAGS = -D_FILE_OFFSET_BITS=64 -Dfopen64=fopen @OS_CXX@ $(BOOST_CPPFLAGS)
 
 # Random Jungle flags
 AM_CXXFLAGS += -DHAVE__BOOL  -D__NOPLUGIN__
@@ -38,4 +38,4 @@ libencore_ladir=$(includedir)/encore
 # build encore binary, linking to library built above
 bin_PROGRAMS = encore
 encore_SOURCES =  encore.cpp
-encore_LDADD= -lencore
+encore_LDADD= -lencore $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_FILESYSTEM_LIBS)
