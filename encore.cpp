@@ -61,6 +61,8 @@ int main(int argc, char* argv[]) {
 	double maf = 0.01;
 	double geno = 0.1;
 	double mind = 0.1;
+	double hwe = 0.001;
+	double hwe2 = 0.001;
 	//snprank
 	double gamma = 0.85;	
 	// reGAIN
@@ -165,6 +167,12 @@ int main(int argc, char* argv[]) {
 		)
 		("mind", po::value<double>(&mind)->default_value(0.1, "0.1"),
 		 "Maximum per-person missing"
+		)
+		("hwe", po::value<double>(&hwe)->default_value(0.001, "0.001"),
+		 "Hardy-Weinberg disequilibrium p-value (exact)"
+		)
+		("hwe2", po::value<double>(&hwe2)->default_value(0.001, "0.001"),
+		 "Hardy-Weinberg disequilibrium p-value (asymptotic)"
 		)
 		("map3",
 		 "Specify 3-column MAP file format"
@@ -341,6 +349,23 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	if (vm.count("mind")) par::MAX_IND_MISSING = mind;
 
+	/********************************
+	 * Hardy-Weinberg (exact)
+	 *******************************/
+	if (vm.count("hwe")) {
+		par::HWD_test = par::HWD_report = true;
+		par::HWD_limit = hwe;
+	}
+
+	/********************************
+	 * Hardy-Weinberg (asymptotic)
+	 *******************************/
+	if (vm.count("hwe2")) {
+		par::HWD_test = par::HWD_report = true;
+		par::HWD_standard = true;
+		par::HWD_limit = hwe2;
+	}
+
 	/* end Plink filtering options ******************************/
 
 	// additional PLINK setup
@@ -501,7 +526,6 @@ int main(int argc, char* argv[]) {
 				desc << endl;
 			return 1;
 	}
-
 
 	if (vm.count("compress-matrices") && !vm.count("regain")) {
 			cerr << "Error: --compress-matrices must be used with --regain" << endl << endl <<
@@ -679,16 +703,6 @@ int main(int argc, char* argv[]) {
 		}
 		
 		PP->calcLDStatistics();
-	}
-
-	// hwe
-	else if (vm.count("hwe")) {
-
-	}
-
-	// hwe2
-	else if (vm.count("hwe2")) {
-
 	}
 
 	// Plink exit
