@@ -181,6 +181,12 @@ int main(int argc, char* argv[]) {
 		("no-fid",
 		 "PED file does not contain columns 1 (family ID)"
 		)
+		("r",
+		 "Pairwise SNPxSNP LD (r)"
+		)
+		("r2",
+		 "Pairwise SNPxSNP LD (r^2)"
+		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
@@ -207,8 +213,10 @@ int main(int argc, char* argv[]) {
 		"ld-prune",
 		"freq",
 		"missing",
+		"r",
+		"r2"
 	};
-	vector<string> modes(margs, margs + 13);
+	vector<string> modes(margs, margs + 15);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -662,6 +670,16 @@ int main(int argc, char* argv[]) {
 		PP->pruneLD();
 	}
 
+	// LD-pruning using r and r^2
+  	else if(vm.count("r") || vm.count("r2")) {
+  		if (vm.count("r2")) par::disp_r2 = true;
+		else if (vm.count("r")) {
+			par::disp_r1 = true;
+			par::disp_r2 = false;
+		}
+		
+		PP->calcLDStatistics();
+	}
 
 	// hwe
 	else if (vm.count("hwe")) {
@@ -670,36 +688,6 @@ int main(int argc, char* argv[]) {
 
 	// hwe2
 	else if (vm.count("hwe2")) {
-
-	}
-
-	// r
-	else if (vm.count("r")) {
-
-	}
-
-	// r2
-	else if (vm.count("r2")) {
-
-	}
-
-	// no-sex
-	else if (vm.count("no-sex")) {
-
-	}
-
-	// map3
-	else if (vm.count("map3")) {
-
-	}
-
-	// no-fid
-	else if (vm.count("no-fid")) {
-
-	}
-
-	// allow-no-sex
-	else if (vm.count("allow-no-sex")) {
 
 	}
 
