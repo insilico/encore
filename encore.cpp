@@ -57,6 +57,10 @@ int main(int argc, char* argv[]) {
 	string extrfile = "";
 	string remfile = "";
 	string keepfile = "";
+	// plink option defaults
+	double maf = 0.01;
+	double geno = 0.1;
+	double mind = 0.1;
 	//snprank
 	double gamma = 0.85;	
 	// reGAIN
@@ -152,6 +156,15 @@ int main(int argc, char* argv[]) {
 		)
 		("missing",
 		 "Missing rates (per individual, per SNP) *mode*"
+		)
+		("maf", po::value<double>(&maf)->default_value(0.01, "0.01"),
+		 "Minor allele frequency"
+		)
+		("geno", po::value<double>(&geno)->default_value(0.1, "0.1"),
+		 "Maximum per-SNP missing"
+		)
+		("mind", po::value<double>(&mind)->default_value(0.1, "0.1"),
+		 "Maximum per-person missing"
 		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
@@ -264,10 +277,30 @@ int main(int argc, char* argv[]) {
 		if(vm.count("counts")) par::af_count = true;
 	}
 
+
+	/* Plink filtering options *********************************/
+	 
 	/********************************
 	 * Missing rates 
 	 *******************************/
 	if (vm.count("missing")) par::report_missing = true;
+
+	/********************************
+	 * Minor allele frequency
+	 *******************************/
+	if (vm.count("maf")) par::min_af = maf;
+
+	/********************************
+	 * Maximum per-SNP missing
+	 *******************************/
+	if (vm.count("geno")) par::MAX_GENO_MISSING = geno;
+
+	/********************************
+	 * Maximum per-SNP missing
+	 *******************************/
+	if (vm.count("mind")) par::MAX_IND_MISSING = mind;
+
+	/* end Plink filtering options ******************************/
 
 	// additional PLINK setup
 	ph->initPlStats();
@@ -596,26 +629,6 @@ int main(int argc, char* argv[]) {
 		PP->pruneLD();
 	}
 
-
-	// missing
-	else if (vm.count("missing")) {
-
-	}
-
-	// maf
-	else if (vm.count("maf")) {
-
-	}
-
-	// geno
-	else if (vm.count("geno")) {
-
-	}
-
-	// mind
-	else if (vm.count("mind")) {
-
-	}
 
 	// hwe
 	else if (vm.count("hwe")) {
