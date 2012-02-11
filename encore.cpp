@@ -166,6 +166,21 @@ int main(int argc, char* argv[]) {
 		("mind", po::value<double>(&mind)->default_value(0.1, "0.1"),
 		 "Maximum per-person missing"
 		)
+		("map3",
+		 "Specify 3-column MAP file format"
+		)
+		("no-sex",
+		 "PED file does not contain column 5 (sex)"
+		)
+		("allow-no-sex",
+		 "Do not set ambiguously-sexed individuals missing"
+		)
+		("no-parents",
+		 "PED file does not contain columns 3,4 (parents)"
+		)
+		("no-fid",
+		 "PED file does not contain columns 1 (family ID)"
+		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
@@ -223,6 +238,24 @@ int main(int argc, char* argv[]) {
 			cerr << "Error: Only one mode may be specified" << endl << endl << desc << endl;
 			return 1;
 	}
+	
+	/* Plink data file options *********************************/
+	if(vm.count("--map3"))
+		par::map3 = true;
+
+	if(vm.count("--no-sex"))
+		par::ped_skip_sex = true;
+
+	if(vm.count("--allow-no-sex"))
+		par::ignore_missing_sex = true;
+
+	if(vm.count("--no-parents"))
+		par::ped_skip_parents = true;
+
+	if(vm.count("--no-fid"))
+		par::ped_skip_fid = true;
+
+	/* Plink data file options *********************************/
 
 	/********************************
 	 * Input file
