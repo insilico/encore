@@ -150,6 +150,9 @@ int main(int argc, char* argv[]) {
 		("counts",
 		 "Modifies --freq to report actual allele counts"
 		)
+		("missing",
+		 "Missing rates (per individual, per SNP)"
+		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
 		)
@@ -175,8 +178,9 @@ int main(int argc, char* argv[]) {
 		"model-rec",
 		"ld-prune",
 		"freq",
+		"missing",
 	};
-	vector<string> modes(margs, margs + 12);
+	vector<string> modes(margs, margs + 13);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -268,6 +272,11 @@ int main(int argc, char* argv[]) {
 		// display MAF counts instead of freqs?
 		if(vm.count("counts")) par::af_count = true;
 	}
+
+	/********************************
+	 * Missing rates 
+	 *******************************/
+	if (vm.count("missing")) par::report_missing = true;
 
 	// additional PLINK setup
 	ph->initPlStats();
