@@ -332,27 +332,27 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Missing rates 
 	 *******************************/
-	if (vm.count("missing")) par::report_missing = true;
+	if (!vm["missing"].defaulted()) par::report_missing = true;
 
 	/********************************
 	 * Minor allele frequency
 	 *******************************/
-	if (vm.count("maf")) par::min_af = maf;
+	if (!vm["maf"].defaulted()) par::min_af = maf;
 
 	/********************************
 	 * Maximum per-SNP missing
 	 *******************************/
-	if (vm.count("geno")) par::MAX_GENO_MISSING = geno;
+	if (!vm["geno"].defaulted()) par::MAX_GENO_MISSING = geno;
 
 	/********************************
 	 * Maximum per-SNP missing
 	 *******************************/
-	if (vm.count("mind")) par::MAX_IND_MISSING = mind;
+	if (!vm["mind"].defaulted()) par::MAX_IND_MISSING = mind;
 
 	/********************************
 	 * Hardy-Weinberg (exact)
 	 *******************************/
-	if (vm.count("hwe")) {
+	if (!vm["hwe"].defaulted()) {
 		par::HWD_test = par::HWD_report = true;
 		par::HWD_limit = hwe;
 	}
@@ -360,7 +360,7 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Hardy-Weinberg (asymptotic)
 	 *******************************/
-	if (vm.count("hwe2")) {
+	if (!vm["hwe2"].defaulted()) {
 		par::HWD_test = par::HWD_report = true;
 		par::HWD_standard = true;
 		par::HWD_limit = hwe2;
