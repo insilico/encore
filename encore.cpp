@@ -130,25 +130,25 @@ int main(int argc, char* argv[]) {
 		 "Include alternate phenotype file in analysis"
 		)
 		("assoc", 
-		 "Run Case/control, QT association tests *mode*"
+		 "Case/control, QTL association *mode*"
 		)
 		("linear", 
-		 "Run linear regression model *mode*"
+		 "Test for quantitative traits and multiple covariates *mode*"
 		)
 		("model",
-		 "Run full model *mode*"
+		 "Cochran-Armitage and full-model C/C association *mode*"
 		)
 		("model-trend",
-		 "Run CA trend model *mode*"
+		 "Use CA-trend test from model *mode*"
 		)
 		("model-gen",
-		 "Run GENO model *mode*"
+		 "Use genotypic test from model *mode*"
 		)
 		("model-dom",
-		 "Run DOM model *mode*"
+		 "Use dominant test from model *mode*"
 		)
 		("model-rec",
-		 "Run REC model *mode*"
+		 "Use recessive test from model *mode*"
 		)
 		("freq",
 		 "Allele frequencies *mode*"
