@@ -58,9 +58,9 @@ int main(int argc, char* argv[]) {
 	string remfile = "";
 	string keepfile = "";
 	// plink option defaults
-	double maf = 0.01;
-	double geno = 0.1;
-	double mind = 0.1;
+	double maf = 0.0;
+	double geno = 1;
+	double mind = 1;
 	double hwe = 0.001;
 	double hwe2 = 0.001;
 	//snprank
@@ -159,13 +159,13 @@ int main(int argc, char* argv[]) {
 		("missing",
 		 "Missing rates (per individual, per SNP) *mode*"
 		)
-		("maf", po::value<double>(&maf)->default_value(0.01, "0.01"),
+		("maf", po::value<double>(&maf)->default_value(0.0, "0.0"),
 		 "Minor allele frequency"
 		)
-		("geno", po::value<double>(&geno)->default_value(0.1, "0.1"),
+		("geno", po::value<double>(&geno)->default_value(1, "1"),
 		 "Maximum per-SNP missing"
 		)
-		("mind", po::value<double>(&mind)->default_value(0.1, "0.1"),
+		("mind", po::value<double>(&mind)->default_value(1, "1"),
 		 "Maximum per-person missing"
 		)
 		("hwe", po::value<double>(&hwe)->default_value(0.001, "0.001"),
@@ -334,20 +334,24 @@ int main(int argc, char* argv[]) {
 	 *******************************/
 	if (vm.count("missing")) par::report_missing = true;
 
+	// Note:  Plink resets the following three values from their defaults 
+	// in options.cpp of 0.01, 0.1, and 0.1, respectively, to 0.0, 1, and 1, 
+	// respectively.  So we must always set these to match Plink's behavior.
+	
 	/********************************
 	 * Minor allele frequency
 	 *******************************/
-	if (!vm["maf"].defaulted()) par::min_af = maf;
+	par::min_af = maf;
 
 	/********************************
 	 * Maximum per-SNP missing
 	 *******************************/
-	if (!vm["geno"].defaulted()) par::MAX_GENO_MISSING = geno;
+	par::MAX_GENO_MISSING = geno;
 
 	/********************************
 	 * Maximum per-SNP missing
 	 *******************************/
-	if (!vm["mind"].defaulted()) par::MAX_IND_MISSING = mind;
+	par::MAX_IND_MISSING = mind;
 
 	/********************************
 	 * Hardy-Weinberg (exact)
