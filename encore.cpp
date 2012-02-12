@@ -256,19 +256,19 @@ int main(int argc, char* argv[]) {
 	}
 	
 	/* Plink data file options *********************************/
-	if(vm.count("--map3"))
-		par::map3 = true;
+	if (vm.count("map3"))
+	     par::map3 = true;
 
-	if(vm.count("--no-sex"))
-		par::ped_skip_sex = true;
+	if (vm.count("no-sex"))
+	     par::ped_skip_sex = true;
 
-	if(vm.count("--allow-no-sex"))
-		par::ignore_missing_sex = true;
+	if (vm.count("allow-no-sex"))
+	     par::ignore_missing_sex = true;
 
-	if(vm.count("--no-parents"))
-		par::ped_skip_parents = true;
+	if (vm.count("no-parents"))
+	     par::ped_skip_parents = true;
 
-	if(vm.count("--no-fid"))
+	if (vm.count("no-fid"))
 		par::ped_skip_fid = true;
 
 	/* Plink data file options *********************************/
@@ -656,7 +656,7 @@ int main(int argc, char* argv[]) {
 
 	// Association tests and models
 	else if (vm.count("assoc") || vm.count("linear") ||
-			vm.count("model") || vm.count("--trend") ||
+			vm.count("model") || vm.count("trend") ||
 			vm.count("model-trend") || vm.count("model-gen") ||
 			vm.count("model-dom") || vm.count("model-rec")) {
 
@@ -672,10 +672,10 @@ int main(int argc, char* argv[]) {
 			par::model_perm_trend = true;
 		}
 		else {
-			if (vm.count("--model-gen")) par::model_perm_gen = true;
-			else if(vm.count("--model-dom")) par::model_perm_dom = true;
-			else if(vm.count("--model-rec")) par::model_perm_rec = true;
-			else if(vm.count("--model-trend")) par::model_perm_trend = true;
+			if (vm.count("model-gen")) par::model_perm_gen = true;
+			else if (vm.count("model-dom")) par::model_perm_dom = true;
+			else if (vm.count("model-rec")) par::model_perm_rec = true;
+			else if (vm.count("model-trend")) par::model_perm_trend = true;
 			else par::model_perm_best = true;
 		}
 
