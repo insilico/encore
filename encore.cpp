@@ -332,7 +332,7 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Missing rates 
 	 *******************************/
-	if (!vm["missing"].defaulted()) par::report_missing = true;
+	if (vm.count("missing")) par::report_missing = true;
 
 	/********************************
 	 * Minor allele frequency
