@@ -41,7 +41,7 @@ using namespace boost;
 namespace po = boost::program_options;
 
 // Plink object
-extern Plink* PP;
+Plink* PP;
 
 /********************************
  * required plink data structures
