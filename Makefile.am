@@ -18,6 +18,8 @@ libencore_la_SOURCES= regain.cpp snprank.cpp
 
 libencore_la_HEADERS= regain.h snprank.h
 
+libencore_la_LDFLAGS  = -release 1.0.0
+
 if WITH_OPENMP
 AM_CXXFLAGS += -fopenmp
 endif
