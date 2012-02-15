@@ -393,15 +393,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		// read covariate file using PLINK
-		else {
-			par::covar_file = true;
-			par::clist = true;
-			par::clist_filename = covarfile;
-			if(!PP->readCovListFile()){
-				cerr << "Error: Problem reading the covariates" << endl;
-				return 1;
-			}
-		}
+		else ph->readCovFile(covarfile);
 	}
 	
 	/********************************
@@ -422,12 +414,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		// read alternate phenotype file using PLINK
-		else {
-			par::pheno_file = true;
-			par::pheno_filename = phenofile;
-			if(!PP->readPhenoFile())
-				cerr << "Error: Problem reading the alternate phenotype file" << endl;
-			}
+		else ph->readPhenoFile(phenofile);
 	}
 
 	/********************************
@@ -441,9 +428,7 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		par::ignore_phenotypes = false;
-		// Remove any individuals with missing phenotypes
-		removeMissingPhenotypes(*PP);
+		ph->pruneInd();
 	}
 
 	/********************************
@@ -464,11 +449,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		// read extract file SNPs using PLINK
-		else {
-			par::extract_set = true;
-			par::extract_file = extrfile;
-			PP->extractExcludeSet(false);
-		}
+		else ph->readExtractFile(extrfile);
 	}
 	
 	/********************************
@@ -489,11 +470,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		// read remove file individuals using PLINK
-		else {
-			par::remove_indiv = true;
-			par::remove_indiv_list = remfile;
-			PP->removeIndividuals(false);
-		}
+		else ph->readRemoveFile(remfile);
 	}
 
 	/********************************
@@ -514,11 +491,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		// read keep file individuals using PLINK
-		else {
-			par::keep_indiv = true;
-			par::keep_indiv_list = keepfile;
-			PP->removeIndividuals(true);
-		}
+		else ph->readKeepFile(keepfile);
 	}
 
 
@@ -584,15 +557,9 @@ int main(int argc, char* argv[]) {
 		if (!vm.count("extract"))
 			cout << "Warning: It is recommended to use an --extract file of SNPs with "\
 				"--regain" << endl;
-		// SNP major mode or individual major mode?
-		if(par::fast_epistasis) {
-			if(!par::SNP_major)
-				PP->Ind2SNP();
-		} else {
-			if(par::SNP_major)
-				PP->SNP2Ind();
-		}
 
+		// set individual major mode
+		ph->setInd();
 		bool fdrprune = vm.count("fdr-prune");
 		Regain* r = new Regain(vm.count("compress-matrices"), sif_thresh, fdrprune);
 		r->run();
@@ -684,18 +651,12 @@ int main(int argc, char* argv[]) {
 		}
 
 		if (vm.count("linear")) par::assoc_glm = true;
-		PP->calcAssociationWithPermutation(*PP->pperm);
+		ph->assocTest();
 	}
 
 	// LD-based pruning
 	else if (vm.count("ld-prune")) {
-		par::prune_ld = true;
-		par::prune_ld_pairwise = true;
-		par::prune_ld_win = 50;
-		par::prune_ld_step = 5;
-		par::prune_ld_vif = 0.5;
-
-		PP->pruneLD();
+		ph->LDPrune();
 	}
 
 	// LD-pruning using r and r^2
@@ -706,7 +667,7 @@ int main(int argc, char* argv[]) {
 			par::disp_r2 = false;
 		}
 		
-		PP->calcLDStatistics();
+		ph->LDStats();
 	}
 
 	// Plink exit
