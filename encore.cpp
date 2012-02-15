@@ -135,6 +135,9 @@ int main(int argc, char* argv[]) {
 		("linear", 
 		 "Test for quantitative traits and multiple covariates *mode*"
 		)
+		("logistic",
+		 "Test for disease traits and multiple covariates *mode*"
+		)
 		("model",
 		 "Cochran-Armitage and full-model C/C association *mode*"
 		)
@@ -213,6 +216,7 @@ int main(int argc, char* argv[]) {
 		"ec",
 		"assoc",
 		"linear",
+		"logistic",
 		"model",
 		"model-trend",
 		"model-gen",
@@ -224,7 +228,7 @@ int main(int argc, char* argv[]) {
 		"r",
 		"r2"
 	};
-	vector<string> modes(margs, margs + 15);
+	vector<string> modes(margs, margs + 16);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -626,7 +630,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Association tests and models
-	else if (vm.count("assoc") || vm.count("linear") ||
+	else if (vm.count("assoc") || vm.count("linear") || vm.count("logistic") ||
 			vm.count("model") || vm.count("trend") ||
 			vm.count("model-trend") || vm.count("model-gen") ||
 			vm.count("model-dom") || vm.count("model-rec")) {
@@ -650,7 +654,8 @@ int main(int argc, char* argv[]) {
 			else par::model_perm_best = true;
 		}
 
-		if (vm.count("linear")) par::assoc_glm = true;
+		if (vm.count("linear") || vm.count("logistic")) par::assoc_glm = true;
+
 		ph->assocTest();
 	}
 
