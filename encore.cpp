@@ -310,9 +310,9 @@ int main(int argc, char* argv[]) {
 
 		// read SNP file in PLINK
 		// binary file
-		if (infile.find(".bed") != string::npos) ph->readPlBinFile(); 
+		if (infile.find(".bed") != string::npos) ph->readBedFile();
 		// plaintext file
-		else if (infile.find(".ped") != string::npos) ph->readPlFile();
+		else if (infile.find(".ped") != string::npos) ph->readPedFile();
 
 	}
 
@@ -373,7 +373,7 @@ int main(int argc, char* argv[]) {
 	/* end Plink filtering options ******************************/
 
 	// additional PLINK setup
-	ph->initPlStats();
+	ph->initData();
 
 	/********************************
 	 * Covar file
