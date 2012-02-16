@@ -8,7 +8,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
-AM_CXXFLAGS = -D_FILE_OFFSET_BITS=64 -Dfopen64=fopen @OS_CXX@ $(BOOST_CPPFLAGS)
+AM_CXXFLAGS = @OS_CXX@ $(BOOST_CPPFLAGS)
 
 # Random Jungle flags
 AM_CXXFLAGS += -DHAVE__BOOL  -D__NOPLUGIN__
@@ -32,6 +32,10 @@ if FORCE_DYNAMIC
 
 else
 AM_CXXFLAGS += -static
+endif
+
+if SYS_MAC
+AM_CXXFLAGS += -D_FILE_OFFSET_BITS=64 -Dfopen64=fopen
 endif
 
 # dir to install headers for encore library
