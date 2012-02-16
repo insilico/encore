@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
 	// data files
 	string infile = "";
 	string outfile_pref = "encore";
+	string numfile = "";
 	string covarfile = "";
 	string phenofile = "";
 	string extrfile = "";
@@ -81,6 +82,9 @@ int main(int argc, char* argv[]) {
 		)
 		("output-prefix,o", po::value<string>(&outfile_pref),
 		 "Prefix to use for all output files"
+		)
+		("numeric,n", po::value<string>(&numfile),
+		 "Numeric file for quantitative data (uses PLINK covariate file format)"
 		)
 		("snprank,s",
 		 "Perform SNPrank analysis *mode*"
@@ -382,6 +386,25 @@ int main(int argc, char* argv[]) {
 
 	// additional PLINK setup
 	ph->initData();
+
+	/********************************
+	 * Numeric file
+	 *******************************/
+	// validate that numeric file is used with proper modes
+	if (vm.count("numeric")) {
+		if(!vm.count("regain")) {
+			cerr << "Error: Numeric file may only be used with --regain"
+				<< endl << desc << endl;
+			return 1;
+		}
+
+		// ensure numeric file exists
+		else if (!boost::filesystem::exists(numfile)) {
+			cerr << "Error: NUmeric file " << numfile << " does not exist" << endl;
+			return 1;
+		}
+
+	}
 
 	/********************************
 	 * Covar file
