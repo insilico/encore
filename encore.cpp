@@ -71,6 +71,7 @@ int main(int argc, char* argv[]) {
 	// EC
 	string ec_algo = "all";
 	string ec_sm = "gm";
+	double ec_numt = 0;
 		   
 	po::options_description desc("Encore - a tool for analysis of GWAS and other "
 			"biological data.\nUsage:  encore -i snpdata.ped [mode] -o output-prefix");
@@ -110,6 +111,9 @@ int main(int argc, char* argv[]) {
 			)
 			("ec-snp-metric", po::value<string>(&ec_sm),
 			 "EC SNP metric (gm|am)"
+			)
+			("ec-num-target", po::value<double>(&ec_numt),
+			 "EC target number of attributes to keep"
 			)
 		("extract", po::value<string>(&extrfile),
 		 "Extract list of SNPs from specified file"
@@ -544,6 +548,11 @@ int main(int argc, char* argv[]) {
 			return 1;
 	}
 
+	if (vm.count("ec-num-target") && !vm.count("ec")) {
+			cerr << "Error: ec-num-target must be used with --ec" << endl << endl <<
+				desc << endl;
+			return 1;
+	}
 
 	/*********************************
 	 * Check primary mode of operation
@@ -581,7 +590,7 @@ int main(int argc, char* argv[]) {
 		// EC options map
 		map<string,string> opts;
 		// required options for EC
-		opts.insert(pair<string,string>("ec-num-target", "0"));
+		opts.insert(pair<string,string>("ec-num-target", lexical_cast<string>(ec_numt)));
 		opts.insert(pair<string,string>("snp-data", infile));
 		opts.insert(pair<string,string>("out-files-prefix", outfile_pref));
 
