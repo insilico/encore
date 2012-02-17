@@ -35,7 +35,7 @@
 extern Plink* PP;
 
 // constructor
-Regain::Regain(bool compr, double sifthr, bool fdrpr) {
+Regain::Regain(bool compr, double sifthr, mattype mytype, bool fdrpr) {
 	// set class vars to passed args
 	compressed = compr;
 	sif_thresh = sifthr;
@@ -82,6 +82,10 @@ Regain::Regain(bool compr, double sifthr, bool fdrpr) {
 	for(int i=0; i < PP->nl_all; ++i) {
 		gainPMatrix[i] = new double[PP->nl_all];
 	}
+}
+
+void Regain::readNumericFile(string numericfile) {
+
 }
 
 // construct regression models for each pair of SNPs

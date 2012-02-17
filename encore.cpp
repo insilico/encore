@@ -400,7 +400,7 @@ int main(int argc, char* argv[]) {
 
 		// ensure numeric file exists
 		else if (!boost::filesystem::exists(numfile)) {
-			cerr << "Error: NUmeric file " << numfile << " does not exist" << endl;
+			cerr << "Error: Numeric file " << numfile << " does not exist" << endl;
 			return 1;
 		}
 
@@ -597,15 +597,29 @@ int main(int argc, char* argv[]) {
 		// set individual major mode
 		ph->setInd();
 		bool fdrprune = vm.count("fdr-prune");
-		Regain* r = new Regain(vm.count("compress-matrices"), sif_thresh, fdrprune);
-		r->run();
-		if (fdrprune){
-			r->writeRegain();
-			r->fdrPrune(fdr);
+		// store all matrix types in vector
+		vector<mattype> matrices;
+		matrices.push_back(REGAIN);
+		// if --numeric passed, add NUMERIC and INTEGRATIVE types
+		if (vm.count("numeric")) {
+			matrices.push_back(NUMERIC);
+			matrices.push_back(INTEGRATIVE);
 		}
-		r->writeRegain(fdrprune);
-		r->writePvals();
-		delete r;
+
+		// iterate through all matrix types
+		vector<mattype>::iterator it;
+		for (it = matrices.begin(); it != matrices.end(); ++it) {
+			Regain* r = new Regain(vm.count("compress-matrices"), sif_thresh, *it, fdrprune);
+			if (*it == NUMERIC || *it == INTEGRATIVE) r->readNumericFile(numfile);
+			r->run();
+			if (fdrprune){
+				r->writeRegain();
+				r->fdrPrune(fdr);
+			}
+			r->writeRegain(fdrprune);
+			r->writePvals();
+			delete r;
+		}
 	}
 
 	// Evaporative Cooling (EC)

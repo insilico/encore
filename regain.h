@@ -23,11 +23,17 @@ using namespace std;
 // type for storing p-value and matrix position (row,col) of
 // reGAIN interaction terms
 typedef pair< double, pair<int, int> > mat_el;
+enum mattype  { 
+	REGAIN = 0,
+	NUMERIC = 1,
+	INTEGRATIVE = 2,
+};
 
 class Regain {
 	public:
-		Regain(bool compr, double sifthr, bool fdrpr = false);
+		Regain(bool compr, double sifthr, mattype mytype, bool fdrpr = false);
 		~Regain();
+		void readNumericFile(string numericfile);
 		void run();
 		void mainEffect(int e1);
 		void addCovariates(Model &m);
