@@ -1,20 +1,20 @@
 /*
  * =====================================================================================
  *
- *       Filename:  regain.h
+ *       Filename:  intregain.h
  *
- *    Description:  Regression GAIN calculation.  Uses linear or logistic regression in 
- *    				calculating pairwise interaction between SNPs.
+ *    Description:  Integrative Regression GAIN calculation.  Uses linear or logistic 
+ *                  regression in calculating pairwise interaction between SNPs.
  *
- *        Created:  02/02/2012
+ *        Created:  02/19/2012
  *
  *         Author:  Nick Davis, nick-davis@utulsa.edu
  *
  * =====================================================================================
  */
 
-#ifndef __REGAIN_H__
-#define __REGAIN_H__
+#ifndef __INTREGAIN_H__
+#define __INTREGAIN_H__
 
 #include "plink/zfstream.h"
 #include "baseregain.h"
@@ -25,10 +25,10 @@ using namespace std;
 // reGAIN interaction terms
 typedef pair< double, pair<int, int> > mat_el;
 
-class Regain : public BaseRegain {
+class IntRegain : public BaseRegain {
 	public:
-		Regain(bool compr, double sifthr, bool fdrpr = false);
-		~Regain();
+		IntRegain(bool compr, double sifthr, bool fdrpr = false);
+		~IntRegain();
 		virtual void run();
 		void mainEffect(int e1);
 		void addCovariates(Model &m);
