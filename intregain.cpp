@@ -1,11 +1,11 @@
 /*
  * =====================================================================================
  *
- *       Filename:  regain.cpp
+ *       Filename:  intregain.cpp
  *
- *    Description:  Regression GAIN calculation
+ *    Description:  Integrative Regression GAIN calculation
  *
- *        Created:  06/20/2011
+ *        Created:  02/19/2012
  *
  *        Author:  Nick Davis, nick-davis@utulsa.edu
  *
@@ -29,13 +29,13 @@
 #include "plink/stats.h"
 #include "plink/helper.h"
 
-#include "regain.h"
+#include "intregain.h"
 
 // Plink object
 extern Plink* PP;
 
 // constructor
-Regain::Regain(bool compr, double sifthr, bool fdrpr) {
+IntRegain::IntRegain(bool compr, double sifthr, bool fdrpr) {
 	// set class vars to passed args
 	compressed = compr;
 	sif_thresh = sifthr;
@@ -85,7 +85,7 @@ Regain::Regain(bool compr, double sifthr, bool fdrpr) {
 }
 
 // construct regression models for each pair of SNPs
-void Regain::run() {
+void IntRegain::run() {
   // Count how many items in the SET1
   int e1, e2;
 #ifdef _OPENMP
@@ -124,7 +124,7 @@ void Regain::run() {
 }
 
 // corresponds to I_2 in GAIN
-void Regain::mainEffect(int e1){
+void IntRegain::mainEffect(int e1){
 	Model *lm_main_effect;
 
 	if(par::bt) {
@@ -183,7 +183,7 @@ void Regain::mainEffect(int e1){
 }
 
 // handle multiple covariates
-void Regain::addCovariates(Model &m){
+void IntRegain::addCovariates(Model &m){
 	for ( int i = 0; i < par::clist_number; i++ ) {
 		// add covariate to the model
 		m.addCovariate(i);
@@ -193,7 +193,7 @@ void Regain::addCovariates(Model &m){
 
 // corresponds to I_3 in GAIN
 // make full symmetric matrix
-void Regain::interactionEffect(int e1, int e2) {
+void IntRegain::interactionEffect(int e1, int e2) {
 	///////////////////////////////////////////////
 	// Logistic or linear regression epistasis test
 
@@ -295,7 +295,7 @@ void Regain::interactionEffect(int e1, int e2) {
 
 // write contents of reGAIN matrix to file.  If fdr is true, the filename is .pruned.regain, and
 // the log output reflects this.
-void Regain::writeRegain(bool fdrprune){
+void IntRegain::writeRegain(bool fdrprune){
 	// write the reGAIN matrix to file named <dataset>.regain
 	string regain_matrix_f = par::output_file_name;
 	string tail = compressed ? ".gz" : "";
@@ -341,7 +341,7 @@ void Regain::writeRegain(bool fdrprune){
 }
 
 // write contents of reGAIN p-values matrix to file.
-void Regain::writePvals(){
+void IntRegain::writePvals(){
 	// write the beta p-values to file named <dataset>.pvals.regain
 	string REGAIN_PMATRIX_f = par::output_file_name;
 	string tail = compressed ? ".gz" : "";
@@ -378,12 +378,12 @@ void Regain::writePvals(){
 // Benjamini Hochberg FDR pruning - removes interaction 
 // terms from reGAIN matrix based on BH FDR threshold
 // code based on method described in All of Statistics p. 167
-void Regain::fdrPrune(double fdr){
+void IntRegain::fdrPrune(double fdr){
 	cout << "Calculating Benjamini Hochberg FDR for pruning" << endl;
 	int m = gainPint.size();
 	// sort gain interaction mal_el type by p-value, maintaining
 	// gainPMatrix location (row, col) with sorted values
-	sort(gainPint.begin(), gainPint.end(), Regain::mecomp);
+	sort(gainPint.begin(), gainPint.end(), IntRegain::mecomp);
 	
 	// use rough FDR (RFDR) to estimate alpha based on input FDR
 	double alpha =  2 * m * fdr / (m + 1);
@@ -422,7 +422,7 @@ void Regain::fdrPrune(double fdr){
 }
 
 // writing R commands to plot FDR graph
-void Regain::writeRcomm(double T, double fdr){
+void IntRegain::writeRcomm(double T, double fdr){
 	ofstream RCOMM;
 	RCOMM.precision(6);
 	string fdr_r_file = par::output_file_name + ".R";
@@ -458,12 +458,12 @@ void Regain::writeRcomm(double T, double fdr){
 }
 
 // comparison fnc for mat_el types
-bool Regain::mecomp ( const mat_el &l, const mat_el &r) {
+bool IntRegain::mecomp ( const mat_el &l, const mat_el &r) {
         return l.first < r.first;
 }
 
 // free memory and close file streams associated with reGAIN
-Regain::~Regain(){
+IntRegain::~IntRegain(){
 	// close BETAS and SIF ofstreams
 	BETAS.close();
 	SIF.close();

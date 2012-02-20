@@ -35,7 +35,9 @@
 #include "plink/helper.h"
 
 #include "snprank.h"
+#include "baseregain.h"
 #include "regain.h"
+#include "intregain.h"
 
 using namespace boost;
 namespace po = boost::program_options;
@@ -600,10 +602,11 @@ int main(int argc, char* argv[]) {
 		// set individual major mode
 		ph->setInd();
 		bool fdrprune = vm.count("fdr-prune");
-		rgtype mytype = NORMAL;
-		// if --numeric passed, set INTEGRATIVE type
-		if (vm.count("numeric")) mytype = INTEGRATIVE;
-		Regain* r = new Regain(vm.count("compress-matrices"), sif_thresh, mytype, fdrprune);
+		BaseRegain* r;
+		// if --numeric passed, create an integrative regain object
+		if (vm.count("numeric")) r = new IntRegain(vm.count("compress-matrices"), sif_thresh, fdrprune);
+		else 
+			r = new Regain(vm.count("compress-matrices"), sif_thresh, fdrprune);
 		r->run();
 		if (fdrprune){
 			r->writeRegain();

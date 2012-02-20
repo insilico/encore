@@ -14,9 +14,9 @@ AM_CXXFLAGS = @OS_CXX@ $(BOOST_CPPFLAGS)
 AM_CXXFLAGS += -DHAVE__BOOL  -D__NOPLUGIN__
 
 lib_LTLIBRARIES=libencore.la
-libencore_la_SOURCES= regain.cpp snprank.cpp
+libencore_la_SOURCES= regain.cpp intregain.cpp snprank.cpp
 
-libencore_la_HEADERS= regain.h snprank.h
+libencore_la_HEADERS= baseregain.h regain.h intregain.h snprank.h
 
 libencore_la_LDFLAGS  = -release 1.0.0
 
