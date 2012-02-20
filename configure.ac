@@ -123,7 +123,7 @@ BOOST_FILESYSTEM
 # Random Jungle
 AC_CHECK_LIB([rjungle], [main])
 # libr, used in Random Jungle
-AC_CHECK_LIB([lr], [mk_lr_options])
+AC_CHECK_LIB([lr], [main])
 
 # GNU Scientific Library (GSL)
 # gsl.m4
