@@ -30,7 +30,6 @@
 
 #include "ec/EvaporativeCooling.h"
 #include "plink/plinklibhandler.h"
-#include "plink/plink.h"
 #include "plink/options.h"
 #include "plink/helper.h"
 

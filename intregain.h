@@ -40,6 +40,8 @@ class IntRegain : public BaseRegain {
 		static bool mecomp (const mat_el &l, const mat_el &r);
 
 	private:
+		// num attributes (SNPs + numeric)
+		int numattr;
 		// use zlib compression?
 		bool compressed;
 		// apply FDR pruning matrix?

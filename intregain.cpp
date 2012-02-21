@@ -51,7 +51,7 @@ IntRegain::IntRegain(bool compr, double sifthr, bool fdrpr) {
 	BETAS.precision(6);
 	MEBETAS.precision(6);
 	// print header
-	BETAS << "SNP1\tSNP2\tB_0\tB_1\tB_1 P-VAL\tB_2\tB_2 P-VAL";
+	BETAS << "attr1\tattr2\tB_0\tB_1\tB_1 P-VAL\tB_2\tB_2 P-VAL";
 	if(par::covar_file) {
 		for (int i = 0; i < par::clist_number; i++) {
 				BETAS << "\t" << PP->clistname[i] << "\t" << PP->clistname[i] << " P-VAL";
@@ -59,7 +59,7 @@ IntRegain::IntRegain(bool compr, double sifthr, bool fdrpr) {
 	}
 	BETAS << "\tB_3\tB_3 P-VAL" << endl;
 
-	MEBETAS << "SNP\tB_0\tB_1\tB_1 P-VAL";
+	MEBETAS << "attr\tB_0\tB_1\tB_1 P-VAL";
 	if(par::covar_file) {
 		for (int i = 0; i < par::clist_number; i++) {
 				MEBETAS << "\t" << PP->clistname[i] << "\t" << PP->clistname[i] << " P-VAL";
@@ -71,22 +71,25 @@ IntRegain::IntRegain(bool compr, double sifthr, bool fdrpr) {
 	SIF.open(sif_f.c_str(), ios::out);
 	cout << "Writing SIF file to [ " << sif_f << " ]" << endl;
 	SIF.precision(6);
-	
-	gainMatrix = new double*[PP->nl_all];
-	gainPMatrix = new double*[PP->nl_all];
+
+	// set total number of attributes
+	numattr = PP->nl_all + par::nlist_number;
+
+	gainMatrix = new double*[numattr];
+	gainPMatrix = new double*[numattr];
 	// allocate reGAIN matrix
-	for(int i=0; i < PP->nl_all; ++i) {
-		gainMatrix[i] = new double[PP->nl_all];
+	for(int i=0; i < numattr; ++i) {
+		gainMatrix[i] = new double[numattr];
 	}
 	// allocate reGAIN p-value matrix
-	for(int i=0; i < PP->nl_all; ++i) {
-		gainPMatrix[i] = new double[PP->nl_all];
+	for(int i=0; i < numattr; ++i) {
+		gainPMatrix[i] = new double[numattr];
 	}
 }
 
-// construct regression models for each pair of SNPs
+// construct regression models for each pairwise comparison between
+// two SNPs, two numeric attributes, or a SNP and a numeric attribute
 void IntRegain::run() {
-  // Count how many items in the SET1
   int e1, e2;
 #ifdef _OPENMP
   // OpenMP parallelization of this outer loop
@@ -100,12 +103,12 @@ void IntRegain::run() {
   // omp_set_nested(1);
   #pragma omp parallel for schedule(dynamic, 1) private(e1, e2)
 #endif
-  for(e1 = 0; e1 < PP->nl_all; e1++) {
+  for(e1 = 0; e1 < numattr; e1++) {
 //	cout << "Peforming tests of epistasis: group "
 //			<< ++epcc << " of " << epc << "        \r";
 //	cout.flush();
 
-      for(e2 = 0; e2 < PP->nl_all; e2++) {
+      for(e2 = 0; e2 < numattr; e2++) {
         // We've already performed this test, since the matrix is symmetric
         if(e1 > e2) continue;
 
@@ -311,7 +314,7 @@ void IntRegain::writeRegain(bool fdrprune){
 		cout << "Writing epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
 	}
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
-	// write column names
+	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
 		if(cn) {
 			REGAIN_MATRIX << "\t" << PP->locus[cn]->name;
@@ -320,10 +323,14 @@ void IntRegain::writeRegain(bool fdrprune){
 			REGAIN_MATRIX << PP->locus[cn]->name;
 		}
 	}
+	// write numeric attribute column names
+	for(int cn=0; cn < par::nlist_number; ++cn)
+			REGAIN_MATRIX << "\t" << PP->nlistname[cn];
+
 	REGAIN_MATRIX << "\n";
 	// write matrix entries
-	for(int i=0; i < PP->nl_all; ++i) {
-		for(int j=i; j < PP->nl_all; ++j) {
+	for(int i=0; i < numattr; ++i) {
+		for(int j=i; j < numattr; ++j) {
 			// use absolute value (magnitude) of betas 
 			gainMatrix[i][j] = abs(gainMatrix[i][j]);	
 			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
@@ -350,17 +357,21 @@ void IntRegain::writePvals(){
 	cout << "Writing epistasis REGAIN p-value matrix [ " << REGAIN_PMATRIX_f << " ]" << endl;
 	// write column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
-	if(cn) {
-		REGAIN_PMATRIX << "\t" << PP->locus[cn]->name;
+		if(cn) {
+			REGAIN_PMATRIX << "\t" << PP->locus[cn]->name;
+		}
+		else {
+			REGAIN_PMATRIX << PP->locus[cn]->name;
+		}
 	}
-	else {
-		REGAIN_PMATRIX << PP->locus[cn]->name;
-	}
-	}
+	// write numeric attribute column names
+	for(int cn=0; cn < par::nlist_number; ++cn)
+			REGAIN_PMATRIX << "\t" << PP->nlistname[cn];
+
 	REGAIN_PMATRIX << "\n";
 	// write matrix entries
-	for(int i=0; i < PP->nl_all; ++i) {
-		for(int j=i; j < PP->nl_all; ++j) {
+	for(int i=0; i < numattr; ++i) {
+		for(int j=i; j < numattr; ++j) {
 			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
 				string tabs = "";
 				for (int k = 0; k < j; k++)
@@ -472,7 +483,7 @@ IntRegain::~IntRegain(){
 	REGAIN_MATRIX.close();  // free gain matrix memory
 
 	// free gain matrix memory
-	for(int i=0; i < PP->nl_all; ++i) {
+	for(int i=0; i < numattr; ++i) {
 		delete [] gainMatrix[i];
 	}
 	delete [] gainMatrix;
@@ -481,7 +492,7 @@ IntRegain::~IntRegain(){
 	REGAIN_PMATRIX.close();  // free gain matrix memory
 
 	// free gain matrix memory
-	for(int i=0; i < PP->nl_all; ++i) {
+	for(int i=0; i < numattr; ++i) {
 		delete [] gainPMatrix[i];
 	}
 	delete [] gainPMatrix;
