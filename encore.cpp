@@ -383,7 +383,8 @@ int main(int argc, char* argv[]) {
 	/* end Plink filtering options ******************************/
 
 	// additional PLINK setup
-	ph->initData();
+	if (!vm.count("snprank"))
+		ph->initData();
 
 	/********************************
 	 * Numeric file
@@ -713,7 +714,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Plink exit
-	shutdown();
+	if (!vm.count("snprank"))
+		shutdown();
 	return 0;
 }
 
