@@ -17,7 +17,6 @@
 #define __REGAIN_H__
 
 #include "plink/zfstream.h"
-#include "baseregain.h"
 
 using namespace std;
 
@@ -25,14 +24,14 @@ using namespace std;
 // reGAIN interaction terms
 typedef pair< double, pair<int, int> > mat_el;
 
-class Regain : public BaseRegain {
+class Regain {
 	public:
-		Regain(bool compr, double sifthr, bool fdrpr = false);
+		Regain(bool compr, double sifthr, bool integrative, bool fdrpr = false);
 		~Regain();
 		virtual void run();
-		void mainEffect(int e1);
+		void mainEffect(int e1, bool numeric);
 		void addCovariates(Model &m);
-		void interactionEffect(int e1, int e2);
+		void interactionEffect(int e1, bool numeric1, int e2, bool numeric2);
 		virtual void writeRegain(bool fdrprune = false);
 		virtual void writePvals();
 		virtual void fdrPrune(double fdr);
@@ -40,6 +39,10 @@ class Regain : public BaseRegain {
 		static bool mecomp (const mat_el &l, const mat_el &r);
 
 	private:
+		// integrative regain mode
+		bool intregain;
+		// num attributes (SNPs + numeric for integrative, SNPs for normal regain)
+		int numattr;
 		// use zlib compression?
 		bool compressed;
 		// apply FDR pruning matrix?

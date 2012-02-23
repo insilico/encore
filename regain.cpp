@@ -35,15 +35,24 @@
 extern Plink* PP;
 
 // constructor
-Regain::Regain(bool compr, double sifthr, bool fdrpr) {
+Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 	// set class vars to passed args
 	compressed = compr;
 	sif_thresh = sifthr;
+	intregain = integrative;
 	fdrprune = fdrpr;
 
+	// set integrative/normal regain vars
+	// additional ext for integrative
+	string ext = intregain ? ".int" : "";
+	// header in betas files
+	string hdr = intregain ? "attr" : "SNP";
+	// total number of attributes
+	numattr = intregain ? PP->nl_all + par::nlist_number : PP->nl_all;
+
 	// initialize matrices and open output files
-	string beta_f = par::output_file_name + ".betas";
-	string mebeta_f = par::output_file_name + ".mebetas";
+	string beta_f = par::output_file_name + ext + ".betas";
+	string mebeta_f = par::output_file_name + ext + ".mebetas";
 	BETAS.open(beta_f.c_str(), ios::out);
 	MEBETAS.open(mebeta_f.c_str(), ios::out);
 	cout << "Writing epistasis pairwise beta values to [ " << beta_f << " ]" << endl;
@@ -51,7 +60,7 @@ Regain::Regain(bool compr, double sifthr, bool fdrpr) {
 	BETAS.precision(6);
 	MEBETAS.precision(6);
 	// print header
-	BETAS << "SNP1\tSNP2\tB_0\tB_1\tB_1 P-VAL\tB_2\tB_2 P-VAL";
+	BETAS << hdr << "1\t" << hdr << "2\tB_0\tB_1\tB_1 P-VAL\tB_2\tB_2 P-VAL";
 	if(par::covar_file) {
 		for (int i = 0; i < par::clist_number; i++) {
 				BETAS << "\t" << PP->clistname[i] << "\t" << PP->clistname[i] << " P-VAL";
@@ -59,7 +68,7 @@ Regain::Regain(bool compr, double sifthr, bool fdrpr) {
 	}
 	BETAS << "\tB_3\tB_3 P-VAL" << endl;
 
-	MEBETAS << "SNP\tB_0\tB_1\tB_1 P-VAL";
+	MEBETAS << hdr << "\tB_0\tB_1\tB_1 P-VAL";
 	if(par::covar_file) {
 		for (int i = 0; i < par::clist_number; i++) {
 				MEBETAS << "\t" << PP->clistname[i] << "\t" << PP->clistname[i] << " P-VAL";
@@ -67,20 +76,20 @@ Regain::Regain(bool compr, double sifthr, bool fdrpr) {
 	}
 	MEBETAS << endl;
 
-	string sif_f = par::output_file_name + ".sif";
+	string sif_f = par::output_file_name + ext + ".sif";
 	SIF.open(sif_f.c_str(), ios::out);
 	cout << "Writing SIF file to [ " << sif_f << " ]" << endl;
 	SIF.precision(6);
 	
-	gainMatrix = new double*[PP->nl_all];
-	gainPMatrix = new double*[PP->nl_all];
+	gainMatrix = new double*[numattr];
+	gainPMatrix = new double*[numattr];
 	// allocate reGAIN matrix
-	for(int i=0; i < PP->nl_all; ++i) {
-		gainMatrix[i] = new double[PP->nl_all];
+	for(int i=0; i < numattr; ++i) {
+		gainMatrix[i] = new double[numattr];
 	}
 	// allocate reGAIN p-value matrix
-	for(int i=0; i < PP->nl_all; ++i) {
-		gainPMatrix[i] = new double[PP->nl_all];
+	for(int i=0; i < numattr; ++i) {
+		gainPMatrix[i] = new double[numattr];
 	}
 }
 
@@ -100,12 +109,12 @@ void Regain::run() {
   // omp_set_nested(1);
   #pragma omp parallel for schedule(dynamic, 1) private(e1, e2)
 #endif
-  for(e1 = 0; e1 < PP->nl_all; e1++) {
+  for(e1 = 0; e1 < numattr; e1++) {
 //	cout << "Peforming tests of epistasis: group "
 //			<< ++epcc << " of " << epc << "        \r";
 //	cout.flush();
 
-      for(e2 = 0; e2 < PP->nl_all; e2++) {
+      for(e2 = 0; e2 < numattr; e2++) {
         // We've already performed this test, since the matrix is symmetric
         if(e1 > e2) continue;
 
@@ -114,9 +123,9 @@ void Regain::run() {
 #ifdef _OPENMP
 #pragma omp critical
 #endif
-			mainEffect(e1);
+			mainEffect(e1, e1 >= PP->nl_all);
 
-		else interactionEffect(e1, e2);
+		else interactionEffect(e1, e1 >= PP->nl_all, e2, e2 >= PP->nl_all);
 
       }
 
@@ -124,7 +133,7 @@ void Regain::run() {
 }
 
 // corresponds to I_2 in GAIN
-void Regain::mainEffect(int e1){
+void Regain::mainEffect(int e1, bool numeric){
 	Model *lm_main_effect;
 
 	if(par::bt) {
@@ -138,9 +147,12 @@ void Regain::mainEffect(int e1){
 	// Set missing data
 	lm_main_effect->setMissing();
 
-	// Main effect of SNP 1
-	lm_main_effect->addAdditiveSNP(e1);
-	lm_main_effect->label.push_back("ADD");
+	string label = numeric ? "NUM" : "ADD";
+
+	// Main effect of SNP/numeric attribute
+	if (numeric) lm_main_effect->addNumeric(e1 - PP->nl_all);
+	else lm_main_effect->addAdditiveSNP(e1);
+	lm_main_effect->label.push_back(label);
 
 	// handle covariates for reGAIN
 	if(par::covar_file) {
@@ -168,7 +180,8 @@ void Regain::mainEffect(int e1){
 	gainPMatrix[e1][e1] = b_p_values[tp - 1]; // p-values don't include intercept term
 
 	// update main effect betas file
-	MEBETAS << PP->locus[e1]->name;
+	if (numeric) MEBETAS << PP->nlistname[e1 - PP->nl_all];
+	else MEBETAS << PP->locus[e1]->name;
 	for(unsigned int i=0; i < b_main_effect.size(); ++i) {
 		if (i == 0) // B0 coefficient doesn't have pval
 			MEBETAS << "\t" << b_main_effect[i];
@@ -193,10 +206,9 @@ void Regain::addCovariates(Model &m){
 
 // corresponds to I_3 in GAIN
 // make full symmetric matrix
-void Regain::interactionEffect(int e1, int e2) {
+void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 	///////////////////////////////////////////////
 	// Logistic or linear regression epistasis test
-
 	Model * lm;
 
 	if(par::bt) {
@@ -210,13 +222,18 @@ void Regain::interactionEffect(int e1, int e2) {
 	// Set missing data
 	lm->setMissing();
 
-	// Main effect of SNP 1
-	lm->addAdditiveSNP(e1);
-	lm->label.push_back("ADD1");
+	string label1 = numeric1 ? "NUM1" : "ADD1";
+	string label2 = numeric2 ? "NUM2" : "ADD2";
 
-	// Main effect of SNP 2
-	lm->addAdditiveSNP(e2);
-	lm->label.push_back("ADD2");
+	// Main effect of SNP/numeric attribute 1
+	if (numeric1) lm->addNumeric(e1 - PP->nl_all);
+	else lm->addAdditiveSNP(e1);
+	lm->label.push_back(label1);
+
+	// Main effect of SNP/numeric attribute 2
+	if (numeric2) lm->addNumeric(e2 - PP->nl_all);
+	else lm->addAdditiveSNP(e2);
+	lm->label.push_back(label2);
 
 	// handle covariates for reGAIN
 	if(par::covar_file) {
@@ -272,7 +289,13 @@ void Regain::interactionEffect(int e1, int e2) {
 	}
 
 	// update BETAS and SIF files
-	BETAS << PP->locus[e1]->name << "\t" << PP->locus[e2]->name;
+
+	// numeric attributes or SNPs
+	if (numeric1) BETAS << PP->nlistname[e1 - PP->nl_all] << "\t";
+	else BETAS << PP->locus[e1]->name << "\t";
+	if (numeric2) BETAS << PP->nlistname[e2 - PP->nl_all];
+	else BETAS << PP->locus[e2]->name;
+
 	for(unsigned int i=0; i < b.size(); ++i) {
 		if (i == 0) // B0 coefficient doesn't have pval
 			BETAS << "\t" << b[i];
@@ -284,8 +307,14 @@ void Regain::interactionEffect(int e1, int e2) {
 	BETAS << endl;
 
 	// add to SIF if interaction >= threshold
-	if (abs(b[b.size() - 1]) >= sif_thresh)
-		SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t" << PP->locus[e2]->name << endl;
+	if (abs(b[b.size() - 1]) >= sif_thresh) {
+		if (numeric1)
+			SIF << PP->nlistname[e1 - PP->nl_all] << "\t" << abs(b[b.size() - 1])  << "\t";
+		else SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t";
+		if (numeric2)
+			SIF << PP->nlistname[e2 - PP->nl_all] << endl;
+		else SIF << PP->locus[e2]->name << endl;
+	}
 #ifdef _OPENMP
 	}
 #endif
@@ -298,20 +327,22 @@ void Regain::interactionEffect(int e1, int e2) {
 void Regain::writeRegain(bool fdrprune){
 	// write the reGAIN matrix to file named <dataset>.regain
 	string regain_matrix_f = par::output_file_name;
+	// additional ext for integrative
+	string ext = intregain ? ".int" : "";
 	string tail = compressed ? ".gz" : "";
 	if (fdrprune) {
 		// close stream from previous write
 		REGAIN_MATRIX.close();
 //		REGAIN_MATRIX.clear();
-		regain_matrix_f += ".pruned.regain" + tail;
+		regain_matrix_f += ext + ".pruned.regain" + tail;
 		cout << "Writing FDR-pruned epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
 	}
 	else {
-		regain_matrix_f += ".regain" + tail;
+		regain_matrix_f += ext + ".regain" + tail;
 		cout << "Writing epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
 	}
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
-	// write column names
+	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
 		if(cn) {
 			REGAIN_MATRIX << "\t" << PP->locus[cn]->name;
@@ -320,10 +351,13 @@ void Regain::writeRegain(bool fdrprune){
 			REGAIN_MATRIX << PP->locus[cn]->name;
 		}
 	}
+	// write numeric attribute column names
+	for(int cn=0; cn < par::nlist_number; ++cn)
+			REGAIN_MATRIX << "\t" << PP->nlistname[cn];
 	REGAIN_MATRIX << "\n";
 	// write matrix entries
-	for(int i=0; i < PP->nl_all; ++i) {
-		for(int j=i; j < PP->nl_all; ++j) {
+	for(int i=0; i < numattr; ++i) {
+		for(int j=i; j < numattr; ++j) {
 			// use absolute value (magnitude) of betas 
 			gainMatrix[i][j] = abs(gainMatrix[i][j]);	
 			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
@@ -344,23 +378,28 @@ void Regain::writeRegain(bool fdrprune){
 void Regain::writePvals(){
 	// write the beta p-values to file named <dataset>.pvals.regain
 	string REGAIN_PMATRIX_f = par::output_file_name;
+	// additional ext for integrative
+	string ext = intregain ? ".int" : "";
 	string tail = compressed ? ".gz" : "";
-	REGAIN_PMATRIX_f += ".pvals.regain" + tail;
+	REGAIN_PMATRIX_f += ext + ".pvals.regain" + tail;
 	REGAIN_PMATRIX.open(REGAIN_PMATRIX_f.c_str(), compressed);
 	cout << "Writing epistasis REGAIN p-value matrix [ " << REGAIN_PMATRIX_f << " ]" << endl;
-	// write column names
+	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
-	if(cn) {
-		REGAIN_PMATRIX << "\t" << PP->locus[cn]->name;
+		if(cn) {
+			REGAIN_PMATRIX << "\t" << PP->locus[cn]->name;
+		}
+		else {
+			REGAIN_PMATRIX << PP->locus[cn]->name;
+		}
 	}
-	else {
-		REGAIN_PMATRIX << PP->locus[cn]->name;
-	}
-	}
+	// write numeric attribute column names
+	for(int cn=0; cn < par::nlist_number; ++cn)
+			REGAIN_PMATRIX << "\t" << PP->nlistname[cn];
 	REGAIN_PMATRIX << "\n";
 	// write matrix entries
-	for(int i=0; i < PP->nl_all; ++i) {
-		for(int j=i; j < PP->nl_all; ++j) {
+	for(int i=0; i < numattr; ++i) {
+		for(int j=i; j < numattr; ++j) {
 			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
 				string tabs = "";
 				for (int k = 0; k < j; k++)
@@ -472,7 +511,7 @@ Regain::~Regain(){
 	REGAIN_MATRIX.close();  // free gain matrix memory
 
 	// free gain matrix memory
-	for(int i=0; i < PP->nl_all; ++i) {
+	for(int i=0; i < numattr; ++i) {
 		delete [] gainMatrix[i];
 	}
 	delete [] gainMatrix;
@@ -481,7 +520,7 @@ Regain::~Regain(){
 	REGAIN_PMATRIX.close();  // free gain matrix memory
 
 	// free gain matrix memory
-	for(int i=0; i < PP->nl_all; ++i) {
+	for(int i=0; i < numattr; ++i) {
 		delete [] gainPMatrix[i];
 	}
 	delete [] gainPMatrix;
