@@ -42,8 +42,8 @@ IntRegain::IntRegain(bool compr, double sifthr, bool fdrpr) {
 	fdrprune = fdrpr;
 
 	// initialize matrices and open output files
-	string beta_f = par::output_file_name + ".betas";
-	string mebeta_f = par::output_file_name + ".mebetas";
+	string beta_f = par::output_file_name + ".intbetas";
+	string mebeta_f = par::output_file_name + ".intmebetas";
 	BETAS.open(beta_f.c_str(), ios::out);
 	MEBETAS.open(mebeta_f.c_str(), ios::out);
 	cout << "Writing epistasis pairwise beta values to [ " << beta_f << " ]" << endl;
@@ -67,7 +67,7 @@ IntRegain::IntRegain(bool compr, double sifthr, bool fdrpr) {
 	}
 	MEBETAS << endl;
 
-	string sif_f = par::output_file_name + ".sif";
+	string sif_f = par::output_file_name + ".intsif";
 	SIF.open(sif_f.c_str(), ios::out);
 	cout << "Writing SIF file to [ " << sif_f << " ]" << endl;
 	SIF.precision(6);
@@ -141,9 +141,15 @@ void IntRegain::mainEffect(int e1){
 	// Set missing data
 	lm_main_effect->setMissing();
 
-	// Main effect of SNP 1
-	lm_main_effect->addAdditiveSNP(e1);
-	lm_main_effect->label.push_back("ADD");
+	// Main effect of either SNP or numeric attribute
+	if (e1 >= PP->nl_all) {
+		lm_main_effect->addNumeric(e1 - PP->nl_all);
+		lm_main_effect->label.push_back("NUM");
+	}
+	else {
+		lm_main_effect->addAdditiveSNP(e1);
+		lm_main_effect->label.push_back("ADD");
+	}
 
 	// handle covariates for reGAIN
 	if(par::covar_file) {
@@ -171,7 +177,8 @@ void IntRegain::mainEffect(int e1){
 	gainPMatrix[e1][e1] = b_p_values[tp - 1]; // p-values don't include intercept term
 
 	// update main effect betas file
-	MEBETAS << PP->locus[e1]->name;
+	if (e1 >= PP->nl_all) MEBETAS << PP->nlistname[e1 - PP-> nl_all]; 
+	else MEBETAS << PP->locus[e1]->name;
 	for(unsigned int i=0; i < b_main_effect.size(); ++i) {
 		if (i == 0) // B0 coefficient doesn't have pval
 			MEBETAS << "\t" << b_main_effect[i];
@@ -213,13 +220,25 @@ void IntRegain::interactionEffect(int e1, int e2) {
 	// Set missing data
 	lm->setMissing();
 
-	// Main effect of SNP 1
-	lm->addAdditiveSNP(e1);
-	lm->label.push_back("ADD1");
+	// Main effect of first SNP or numeric attribute 
+	if (e1 >= PP->nl_all) {
+		lm->addNumeric(e1 - PP->nl_all);
+		lm->label.push_back("NUM1");
+	}
+	else {
+		lm->addAdditiveSNP(e1);
+		lm->label.push_back("ADD1");
+	}
 
-	// Main effect of SNP 2
-	lm->addAdditiveSNP(e2);
-	lm->label.push_back("ADD2");
+	// Main effect of second SNP or numeric attribute 
+	if (e2 >= PP->nl_all) {
+		lm->addNumeric(e2 - PP->nl_all);
+		lm->label.push_back("NUM2");
+	}
+	else {
+		lm->addAdditiveSNP(e2);
+		lm->label.push_back("ADD2");
+	}
 
 	// handle covariates for reGAIN
 	if(par::covar_file) {
@@ -275,7 +294,12 @@ void IntRegain::interactionEffect(int e1, int e2) {
 	}
 
 	// update BETAS and SIF files
-	BETAS << PP->locus[e1]->name << "\t" << PP->locus[e2]->name;
+	if (e1 >= PP->nl_all) BETAS << PP->nlistname[e1 - PP->nl_all] << "\t";
+	else BETAS << PP->locus[e1]->name << "\t";
+		
+	if (e2 >= PP->nl_all) BETAS << PP->nlistname[e2 - PP->nl_all];
+	else BETAS << PP->locus[e2]->name;
+
 	for(unsigned int i=0; i < b.size(); ++i) {
 		if (i == 0) // B0 coefficient doesn't have pval
 			BETAS << "\t" << b[i];
@@ -287,8 +311,14 @@ void IntRegain::interactionEffect(int e1, int e2) {
 	BETAS << endl;
 
 	// add to SIF if interaction >= threshold
-	if (abs(b[b.size() - 1]) >= sif_thresh)
-		SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t" << PP->locus[e2]->name << endl;
+	if (abs(b[b.size() - 1]) >= sif_thresh) {
+		if (e1 >= PP->nl_all)
+			SIF << PP->nlistname[e1 - PP->nl_all] << "\t" << abs(b[b.size() - 1])  << "\t"; 
+		else SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t";  
+		if (e2 >= PP->nl_all)
+			SIF << PP->nlistname[e2 - PP->nl_all] << endl;
+		else SIF << PP->locus[e2]->name << endl;  
+	}
 #ifdef _OPENMP
 	}
 #endif
@@ -306,11 +336,11 @@ void IntRegain::writeRegain(bool fdrprune){
 		// close stream from previous write
 		REGAIN_MATRIX.close();
 //		REGAIN_MATRIX.clear();
-		regain_matrix_f += ".pruned.regain" + tail;
+		regain_matrix_f += ".pruned.intregain" + tail;
 		cout << "Writing FDR-pruned epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
 	}
 	else {
-		regain_matrix_f += ".regain" + tail;
+		regain_matrix_f += ".intregain" + tail;
 		cout << "Writing epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
 	}
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
@@ -352,7 +382,7 @@ void IntRegain::writePvals(){
 	// write the beta p-values to file named <dataset>.pvals.regain
 	string REGAIN_PMATRIX_f = par::output_file_name;
 	string tail = compressed ? ".gz" : "";
-	REGAIN_PMATRIX_f += ".pvals.regain" + tail;
+	REGAIN_PMATRIX_f += ".pvals.intregain" + tail;
 	REGAIN_PMATRIX.open(REGAIN_PMATRIX_f.c_str(), compressed);
 	cout << "Writing epistasis REGAIN p-value matrix [ " << REGAIN_PMATRIX_f << " ]" << endl;
 	// write column names
