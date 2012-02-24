@@ -55,8 +55,8 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 	string mebeta_f = par::output_file_name + ext + ".mebetas";
 	BETAS.open(beta_f.c_str(), ios::out);
 	MEBETAS.open(mebeta_f.c_str(), ios::out);
-	cout << "Writing epistasis pairwise beta values to [ " << beta_f << " ]" << endl;
-	cout << "Writing epistasis main effect beta values to [ " << mebeta_f << " ]" << endl;
+	cout << "Writing interaction beta values to [ " << beta_f << " ]" << endl;
+	cout << "Writing main effect beta values to [ " << mebeta_f << " ]" << endl;
 	BETAS.precision(6);
 	MEBETAS.precision(6);
 	// print header
@@ -78,24 +78,24 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 
 	string sif_f = par::output_file_name + ext + ".sif";
 	SIF.open(sif_f.c_str(), ios::out);
-	cout << "Writing SIF file to [ " << sif_f << " ]" << endl;
+	cout << "Writing Cytoscape network file (SIF) to [ " << sif_f << " ]" << endl;
 	SIF.precision(6);
 	
-	gainMatrix = new double*[numattr];
-	gainPMatrix = new double*[numattr];
+	regainMatrix = new double*[numattr];
+	regainPMatrix = new double*[numattr];
 	// allocate reGAIN matrix
 	for(int i=0; i < numattr; ++i) {
-		gainMatrix[i] = new double[numattr];
+		regainMatrix[i] = new double[numattr];
 	}
 	// allocate reGAIN p-value matrix
 	for(int i=0; i < numattr; ++i) {
-		gainPMatrix[i] = new double[numattr];
+		regainPMatrix[i] = new double[numattr];
 	}
 }
 
-// construct regression models for each pair of SNPs
+// iterate over all SNPs and numeric attributes (if present), calculating
+// regression for main effect and interaction terms
 void Regain::run() {
-  // Count how many items in the SET1
   int e1, e2;
 #ifdef _OPENMP
   // OpenMP parallelization of this outer loop
@@ -103,10 +103,6 @@ void Regain::run() {
   int numProcs = omp_get_num_procs();
   cout << "\t\t" << numThreads << " OpenMP threads available" << endl;
   cout << "\t\t" << numProcs << " OpenMP processors available" << endl;
-  // omp_set_num_threads(numProcs);
-  // printLOG("OpenMP number of threads set to    " + dbl2str((double) numThreads) + "\n");
-  // printLOG("OpenMP number of processors set to " + dbl2str((double) numProcs) + "\n");
-  // omp_set_nested(1);
   #pragma omp parallel for schedule(dynamic, 1) private(e1, e2)
 #endif
   for(e1 = 0; e1 < numattr; e1++) {
@@ -118,7 +114,7 @@ void Regain::run() {
         // We've already performed this test, since the matrix is symmetric
         if(e1 > e2) continue;
 
-		// main effect of SNP 1 - for I_2 diagonal of the GAIN matrix
+		// main effect of SNP/numeric attribute 1 - diagonal of the reGAIN matrix
         if(e1 == e2)
 #ifdef _OPENMP
 #pragma omp critical
@@ -129,13 +125,14 @@ void Regain::run() {
 
       }
 
-   } // Next pair of SNPs
+   } // Next pair of SNPs/numeric attributes
 }
 
-// corresponds to I_2 in GAIN
+// calculate main effect regression coefficients for diagonal terms
 void Regain::mainEffect(int e1, bool numeric){
 	Model *lm_main_effect;
 
+	// logisic regression for binary phenotypes, linear otherwise
 	if(par::bt) {
 	  LogisticModel * m = new LogisticModel(PP);
 	  lm_main_effect = m;
@@ -147,6 +144,7 @@ void Regain::mainEffect(int e1, bool numeric){
 	// Set missing data
 	lm_main_effect->setMissing();
 
+	// label in regression model
 	string label = numeric ? "NUM" : "ADD";
 
 	// Main effect of SNP/numeric attribute
@@ -154,10 +152,8 @@ void Regain::mainEffect(int e1, bool numeric){
 	else lm_main_effect->addAdditiveSNP(e1);
 	lm_main_effect->label.push_back(label);
 
-	// handle covariates for reGAIN
-	if(par::covar_file) {
-		addCovariates(*lm_main_effect);
-	}
+	// add covariates if specified
+	if(par::covar_file) addCovariates(*lm_main_effect);
 
 	// Build design matrix
 	lm_main_effect->buildDesignMatrix();
@@ -174,28 +170,28 @@ void Regain::mainEffect(int e1, bool numeric){
 	vector_t b_main_effect = lm_main_effect->getCoefs();
 	vector_t b_p_values = lm_main_effect->getPVals();
 
-	// set main effect (diagonal) beta coefficient and corresponding
-	// p-value
-	gainMatrix[e1][e1] = b_main_effect[tp];
-	gainPMatrix[e1][e1] = b_p_values[tp - 1]; // p-values don't include intercept term
+	// set main effect (diagonal) beta coefficient and corresponding p-value
+	regainMatrix[e1][e1] = b_main_effect[tp];
+	// p-values don't include intercept term
+	regainPMatrix[e1][e1] = b_p_values[tp - 1];
 
 	// update main effect betas file
 	if (numeric) MEBETAS << PP->nlistname[e1 - PP->nl_all];
 	else MEBETAS << PP->locus[e1]->name;
 	for(unsigned int i=0; i < b_main_effect.size(); ++i) {
-		if (i == 0) // B0 coefficient doesn't have pval
-			MEBETAS << "\t" << b_main_effect[i];
+		// B0 coefficient doesn't have pval
+		if (i == 0) MEBETAS << "\t" << b_main_effect[i];
 		// adjust pvals index since there's no B0 pval
-		else
-			MEBETAS << "\t" << b_main_effect[i] << "\t" << b_p_values[i - 1];
+		else MEBETAS << "\t" << b_main_effect[i] << "\t" << b_p_values[i - 1];
 
 	}
 	MEBETAS << endl;
 	
+	// free model memory
 	delete lm_main_effect;
 }
 
-// handle multiple covariates
+// add covariate terms to model, handling multiple covariates
 void Regain::addCovariates(Model &m){
 	for ( int i = 0; i < par::clist_number; i++ ) {
 		// add covariate to the model
@@ -204,24 +200,24 @@ void Regain::addCovariates(Model &m){
 	}
 }
 
-// corresponds to I_3 in GAIN
-// make full symmetric matrix
+// calculate epistatic interaction between two SNPs or numeric attributes,
+// or a SNP and a numeric attribute
 void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
-	///////////////////////////////////////////////
-	// Logistic or linear regression epistasis test
 	Model * lm;
 
+	// logisic regression for binary phenotypes, linear otherwise
 	if(par::bt) {
-	LogisticModel * m = new LogisticModel(PP);
-	lm = m;
+		LogisticModel * m = new LogisticModel(PP);
+		lm = m;
 	} else {
-	LinearModel * m = new LinearModel(PP);
-	lm = m;
+		LinearModel * m = new LinearModel(PP);
+		lm = m;
 	}
 
 	// Set missing data
 	lm->setMissing();
 
+	// labels in regression model
 	string label1 = numeric1 ? "NUM1" : "ADD1";
 	string label2 = numeric2 ? "NUM2" : "ADD2";
 
@@ -235,21 +231,15 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 	else lm->addAdditiveSNP(e2);
 	lm->label.push_back(label2);
 
-	// handle covariates for reGAIN
-	if(par::covar_file) {
-		addCovariates(*lm);
-	}
+	// add covariates if specified
+	if(par::covar_file) addCovariates(*lm);
 
-	// Epistasis
+	// epistatic interaction
 	lm->addInteraction(1, 2);
 	lm->label.push_back("EPI");
 
 	// Build design matrix
 	lm->buildDesignMatrix();
-
-	// Prune out any remaining missing individuals
-	// No longer needed
-	//		   lm->pruneY();
 
 	// Fit linear model
 	lm->fitLM();
@@ -262,9 +252,8 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 	int tp = 3;
 
 	// add # covars to test param to get interaction param
-	if (par::covar_file){
-		tp += par::clist_number;
-	}
+	if (par::covar_file) tp += par::clist_number;
+
 	lm->testParameter = tp; // interaction
 #ifdef _OPENMP
 #pragma omp critical
@@ -272,13 +261,11 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 #endif
 	b = lm->getCoefs();
 
-	//printLOG("The model p-value (x^2) = " + dbl2str(pvalue) + "\n");
-	
-		vector_t beta_p = lm->getPVals();
-	gainMatrix[e1][e2] = b[b.size() - 1];
-	gainMatrix[e2][e1] = b[b.size() - 1];
-	gainPMatrix[e1][e2] = beta_p[beta_p.size() - 1];
-	gainPMatrix[e2][e1] = beta_p[beta_p.size() - 1];
+	vector_t beta_p = lm->getPVals();
+	regainMatrix[e1][e2] = b[b.size() - 1];
+	regainMatrix[e2][e1] = b[b.size() - 1];
+	regainPMatrix[e1][e2] = beta_p[beta_p.size() - 1];
+	regainPMatrix[e2][e1] = beta_p[beta_p.size() - 1];
 
 	// store p-value along with (e1, e2) location of
 	// item.  This is used later for FDR pruning
@@ -297,12 +284,10 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 	else BETAS << PP->locus[e2]->name;
 
 	for(unsigned int i=0; i < b.size(); ++i) {
-		if (i == 0) // B0 coefficient doesn't have pval
-			BETAS << "\t" << b[i];
+		// B0 coefficient doesn't have pval
+		if (i == 0) BETAS << "\t" << b[i];
 		// adjust pvals index since there's no B0 pval
-		else
-			BETAS << "\t" << b[i] << "\t" << beta_p[i - 1];
-
+		else BETAS << "\t" << b[i] << "\t" << beta_p[i - 1];
 	}
 	BETAS << endl;
 
@@ -316,18 +301,20 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 		else SIF << PP->locus[e2]->name << endl;
 	}
 #ifdef _OPENMP
-	}
+}
 #endif
-	// Clean up
+	// free model memory
 	delete lm;
 }
 
-// write contents of reGAIN matrix to file.  If fdr is true, the filename is .pruned.regain, and
-// the log output reflects this.
+// write contents of reGAIN or reGAIN p-value matrix to file.  Integrative
+// reGAIN files have a '.int.' in the filename, p-values have a '.pvals.'
+// If fdr is true, the filename is .pruned.regain, and the log output
+// reflects this.
 void Regain::writeRegain(bool pvals, bool fdrprune){
-	double** gainMat;
-	if (pvals) gainMat = gainPMatrix;
-	else gainMat = gainMatrix;
+	double** regainMat;
+	if (pvals) regainMat = regainPMatrix;
+	else regainMat = regainMatrix;
 	// write the reGAIN matrix to file named <dataset>.regain
 	string regain_matrix_f = par::output_file_name;
 	// additional prefixes/extension for output filename 
@@ -365,21 +352,21 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 	for(int i=0; i < numattr; ++i) {
 		for(int j=i; j < numattr; ++j) {
 			// use absolute value (magnitude) of betas 
-			gainMat[i][j] = abs(gainMat[i][j]);	
+			regainMat[i][j] = abs(regainMat[i][j]);
 			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
 				string tabs = "";
 				for (int k = 0; k < j; k++)
 					tabs += "\t";
-				REGAIN_MATRIX << tabs << dbl2str_fixed(gainMat[i][j], 6);
+				REGAIN_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
 			}
 			else {
-				REGAIN_MATRIX << "\t" << dbl2str_fixed(gainMat[i][j], 6);
+				REGAIN_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
 			}
 		}
 		REGAIN_MATRIX << "\n";
 	}
 
-	// close ZOutput stream
+	// close output stream
 	REGAIN_MATRIX.close();
 }
 
@@ -421,15 +408,15 @@ void Regain::fdrPrune(double fdr){
 	for (int i = 0; i <= R; i++) {
 		pair<int,int> p = gainPint[i].second;
 		// symmetric matrix, so set [e1][e2] and [e2][e1]
-		gainMatrix[p.first][p.second] = 0.0;
-		gainMatrix[p.second][p.first] = 0.0;
+		regainMatrix[p.first][p.second] = 0.0;
+		regainMatrix[p.second][p.first] = 0.0;
 	}
 	cout << "Pruned " + int2str(R + 1) + " values from reGAIN interaction terms" << endl;
 	// use threshold to write R commands to generate FDR plot 
 	writeRcomm(T, fdr);
 }
 
-// writing R commands to plot FDR graph
+// write R commands to plot FDR graph
 void Regain::writeRcomm(double T, double fdr){
 	ofstream RCOMM;
 	RCOMM.precision(6);
@@ -466,25 +453,25 @@ void Regain::writeRcomm(double T, double fdr){
 }
 
 // comparison fnc for mat_el types
-bool Regain::mecomp ( const mat_el &l, const mat_el &r) {
+bool Regain::mecomp(const mat_el &l, const mat_el &r) {
         return l.first < r.first;
 }
 
-// free memory and close file streams associated with reGAIN
+// destructor, free memory and close file streams
 Regain::~Regain(){
 	// close BETAS and SIF ofstreams
 	BETAS.close();
 	SIF.close();
 
-	// free gain matrix memory
+	// free regain matrix memory
 	for(int i=0; i < numattr; ++i) {
-		delete [] gainMatrix[i];
+		delete [] regainMatrix[i];
 	}
-	delete [] gainMatrix;
+	delete [] regainMatrix;
 
-	// free gain matrix memory
+	// free regain p-value matrix memory
 	for(int i=0; i < numattr; ++i) {
-		delete [] gainPMatrix[i];
+		delete [] regainPMatrix[i];
 	}
-	delete [] gainPMatrix;
+	delete [] regainPMatrix;
 }
