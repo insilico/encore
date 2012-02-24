@@ -32,6 +32,7 @@
 #include "plink/plinklibhandler.h"
 #include "plink/options.h"
 #include "plink/helper.h"
+#include "plink/stats.h"
 
 #include "snprank.h"
 #include "regain.h"
@@ -56,6 +57,7 @@ int main(int argc, char* argv[]) {
 	string keepfile = "";
 	// plink option defaults
 	string miss_geno = "0";
+	double ci = 0.95;
 	double maf = 0.0;
 	double geno = 1;
 	double mind = 1;
@@ -136,6 +138,9 @@ int main(int argc, char* argv[]) {
 		)
 		("make-bed",
 		 "Make .bed, .fam and .bim"
+		)
+		("ci", po::value<double>(&ci)->default_value(0.95, "0.95"),
+		 "Confidence interval for CMH odds ratios"
 		)
 		("assoc", 
 		 "Case/control, QTL association *mode*"
@@ -287,6 +292,13 @@ int main(int argc, char* argv[]) {
 	if (vm.count("no-fid"))
 		par::ped_skip_fid = true;
 
+	/********************************
+	 * Missing genotype code
+	 *******************************/
+	if (!vm["missing-genotoype"].defaulted()) {
+		par::missing_genotype = miss_geno;
+		par::out_missing_genotype = par::missing_genotype;
+	}
 	/* Plink data file options *********************************/
 
 	/********************************
@@ -349,7 +361,6 @@ int main(int argc, char* argv[]) {
 		if(vm.count("counts")) par::af_count = true;
 	}
 
-
 	/* Plink filtering options *********************************/
 	 
 	/********************************
@@ -358,11 +369,15 @@ int main(int argc, char* argv[]) {
 	if (vm.count("missing")) par::report_missing = true;
 
 	/********************************
-	 * Missing genotype code
+	 * Confidence interval for models
 	 *******************************/
-	if (vm.count("missing-genotoype")) {
-      par::missing_genotype = miss_geno;
-      par::out_missing_genotype = par::missing_genotype;
+	if (!vm["ci"].defaulted()) {
+		par::display_ci = true;
+		par::ci_level = ci;
+		if (par::ci_level < 0.01 || par::ci_level >= 1 )
+			cerr << "CI level (--ci) must be between 0 and 1" << endl;
+
+		par::ci_zt = ltqnorm( 1 - (1 - par::ci_level) / 2  );
 	}
 
 	// Note:  Plink resets the following three values from their defaults 
