@@ -28,37 +28,35 @@ class Regain {
 	public:
 		Regain(bool compr, double sifthr, bool integrative, bool fdrpr = false);
 		~Regain();
-		virtual void run();
+		void run();
 		void mainEffect(int e1, bool numeric);
 		void addCovariates(Model &m);
 		void interactionEffect(int e1, bool numeric1, int e2, bool numeric2);
-		virtual void writeRegain(bool fdrprune = false);
-		virtual void writePvals();
-		virtual void fdrPrune(double fdr);
+		void writeRegain(bool pvalues, bool fdrprune = false);
+		void fdrPrune(double fdr);
 		void writeRcomm(double T, double fdr);
 		static bool mecomp (const mat_el &l, const mat_el &r);
 
 	private:
 		// integrative regain mode
 		bool intregain;
-		// num attributes (SNPs + numeric for integrative, SNPs for normal regain)
-		int numattr;
 		// use zlib compression?
 		bool compressed;
 		// apply FDR pruning matrix?
 		bool fdrprune;
+		// num attributes (SNPs + numeric for integrative, SNPs for normal regain)
+		int numattr;
 		// SIF interaction threshold
 		double sif_thresh;
-		// Output matrix files
+		// Output matrix file (used for writing regain and p-values files)
 		ZOutput REGAIN_MATRIX;
-		ZOutput REGAIN_PMATRIX;
-		// in memory arrays
-		double** gainMatrix;
-		double** gainPMatrix;
-		// addition output files
+		// additional output files
 		ofstream MEBETAS;
 		ofstream BETAS;
 		ofstream SIF;
+		// in memory arrays
+		double** regainMatrix;
+		double** regainPMatrix;
 		// collection of all interaction terms as mat_el types
 		vector<mat_el> gainPint;
 };

@@ -32,6 +32,7 @@
 #include "plink/plinklibhandler.h"
 #include "plink/options.h"
 #include "plink/helper.h"
+#include "plink/stats.h"
 
 #include "snprank.h"
 #include "regain.h"
@@ -55,6 +56,8 @@ int main(int argc, char* argv[]) {
 	string remfile = "";
 	string keepfile = "";
 	// plink option defaults
+	string miss_geno = "0";
+	double ci = 0.95;
 	double maf = 0.0;
 	double geno = 1;
 	double mind = 1;
@@ -81,6 +84,9 @@ int main(int argc, char* argv[]) {
 		)
 		("numeric,n", po::value<string>(&numfile),
 		 "Numeric file for quantitative data (uses PLINK covariate file format)"
+		)
+		("data-summary,d",
+		 "Simply print input file stats (for PLINK .ped/.bed files)"
 		)
 		("snprank,s",
 		 "Perform SNPrank analysis *mode*"
@@ -133,6 +139,12 @@ int main(int argc, char* argv[]) {
 		("pheno", po::value<string>(&phenofile),
 		 "Include alternate phenotype file in analysis"
 		)
+		("make-bed",
+		 "Make .bed, .fam and .bim"
+		)
+		("ci", po::value<double>(&ci)->default_value(0.95, "0.95"),
+		 "Confidence interval for CMH odds ratios"
+		)
 		("assoc", 
 		 "Case/control, QTL association *mode*"
 		)
@@ -166,6 +178,9 @@ int main(int argc, char* argv[]) {
 		("missing",
 		 "Missing rates (per individual, per SNP) *mode*"
 		)
+		("missing-genotype", po::value<string>(&miss_geno)->default_value("0", "\"0\""),
+		 "Missing genotype code"
+		)
 		("maf", po::value<double>(&maf)->default_value(0.0, "0.0"),
 		 "Minor allele frequency"
 		)
@@ -180,6 +195,9 @@ int main(int argc, char* argv[]) {
 		)
 		("hwe2", po::value<double>(&hwe2)->default_value(0.001, "0.001"),
 		 "Hardy-Weinberg disequilibrium p-value (asymptotic)"
+		)
+		("filter-founders",
+		 "Include only founders"
 		)
 		("map3",
 		 "Specify 3-column MAP file format"
@@ -230,9 +248,11 @@ int main(int argc, char* argv[]) {
 		"freq",
 		"missing",
 		"r",
-		"r2"
+		"r2",
+		"make-bed",
+		"data-summary"
 	};
-	vector<string> modes(margs, margs + 16);
+	vector<string> modes(margs, margs + 18);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -279,6 +299,13 @@ int main(int argc, char* argv[]) {
 	if (vm.count("no-fid"))
 		par::ped_skip_fid = true;
 
+	/********************************
+	 * Missing genotype code
+	 *******************************/
+	if (!vm["missing-genotoype"].defaulted()) {
+		par::missing_genotype = miss_geno;
+		par::out_missing_genotype = par::missing_genotype;
+	}
 	/* Plink data file options *********************************/
 
 	/********************************
@@ -324,6 +351,13 @@ int main(int argc, char* argv[]) {
 
 	}
 
+	else if (infile.find(".gain") == string::npos &&
+			infile.find(".regain") == string::npos) {
+		cerr << "Error:  Input file must be a PLINK data file (.ped/.bed)"
+			<< " or a GAIN/reGAIN matrix (.gain/.regain)" << endl;
+		return 1;
+	}
+
 	/********************************
 	 * Allele frequencies
 	 *******************************/
@@ -334,13 +368,24 @@ int main(int argc, char* argv[]) {
 		if(vm.count("counts")) par::af_count = true;
 	}
 
-
 	/* Plink filtering options *********************************/
 	 
 	/********************************
 	 * Missing rates 
 	 *******************************/
 	if (vm.count("missing")) par::report_missing = true;
+
+	/********************************
+	 * Confidence interval for models
+	 *******************************/
+	if (!vm["ci"].defaulted()) {
+		par::display_ci = true;
+		par::ci_level = ci;
+		if (par::ci_level < 0.01 || par::ci_level >= 1 )
+			cerr << "CI level (--ci) must be between 0 and 1" << endl;
+
+		par::ci_zt = ltqnorm( 1 - (1 - par::ci_level) / 2  );
+	}
 
 	// Note:  Plink resets the following three values from their defaults 
 	// in options.cpp of 0.01, 0.1, and 0.1, respectively, to 0.0, 1, and 1, 
@@ -525,6 +570,10 @@ int main(int argc, char* argv[]) {
 		else ph->readKeepFile(keepfile);
 	}
 
+	/********************************
+	 * Filter based on founders
+	 *******************************/
+	if (vm.count("filter-founders")) ph->filterFounders();
 
 	/*********************************
 	 * Validate mode sub-options
@@ -604,11 +653,11 @@ int main(int argc, char* argv[]) {
 			r = new Regain(vm.count("compress-matrices"), sif_thresh, false, fdrprune);
 		r->run();
 		if (fdrprune){
-			r->writeRegain();
+			r->writeRegain(false);
 			r->fdrPrune(fdr);
 		}
-		r->writeRegain(fdrprune);
-		r->writePvals();
+		r->writeRegain(false, fdrprune);
+		r->writeRegain(true);
 		delete r;
 	}
 
@@ -709,6 +758,15 @@ int main(int argc, char* argv[]) {
 		}
 		
 		ph->LDStats();
+	}
+
+	// Create PLINK binary files
+	else if (vm.count("make-bed")) {
+		ph->writeBedFile();
+	}
+
+	else if (vm.count("data-summary")) {
+		// simply print PLINK stats
 	}
 
 	// Plink exit
