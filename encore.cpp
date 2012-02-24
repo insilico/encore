@@ -133,6 +133,9 @@ int main(int argc, char* argv[]) {
 		("pheno", po::value<string>(&phenofile),
 		 "Include alternate phenotype file in analysis"
 		)
+		("make-bed",
+		 "Make .bed, .fam and .bim"
+		)
 		("assoc", 
 		 "Case/control, QTL association *mode*"
 		)
@@ -230,9 +233,10 @@ int main(int argc, char* argv[]) {
 		"freq",
 		"missing",
 		"r",
-		"r2"
+		"r2",
+		"make-bed"
 	};
-	vector<string> modes(margs, margs + 16);
+	vector<string> modes(margs, margs + 17);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -716,6 +720,11 @@ int main(int argc, char* argv[]) {
 		}
 		
 		ph->LDStats();
+	}
+
+	// Create PLINK binary files
+	else if (vm.count("make-bed")) {
+		ph->writeBedFile();
 	}
 
 	// Plink exit
