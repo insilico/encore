@@ -193,6 +193,9 @@ int main(int argc, char* argv[]) {
 		("hwe2", po::value<double>(&hwe2)->default_value(0.001, "0.001"),
 		 "Hardy-Weinberg disequilibrium p-value (asymptotic)"
 		)
+		("filter-founders",
+		 "Include only founders"
+		)
 		("map3",
 		 "Specify 3-column MAP file format"
 		)
@@ -563,6 +566,10 @@ int main(int argc, char* argv[]) {
 		else ph->readKeepFile(keepfile);
 	}
 
+	/********************************
+	 * Filter based on founders
+	 *******************************/
+	if (vm.count("filter-founders")) ph->filterFounders();
 
 	/*********************************
 	 * Validate mode sub-options
