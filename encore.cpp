@@ -324,6 +324,13 @@ int main(int argc, char* argv[]) {
 
 	}
 
+	else if (infile.find(".gain") == string::npos &&
+			infile.find(".regain") == string::npos) {
+		cerr << "Error:  Input file must be a PLINK data file (.ped/.bed)"
+			<< " or a GAIN/reGAIN matrix (.gain/.regain)" << endl;
+		return 1;
+	}
+
 	/********************************
 	 * Allele frequencies
 	 *******************************/
