@@ -85,6 +85,9 @@ int main(int argc, char* argv[]) {
 		("numeric,n", po::value<string>(&numfile),
 		 "Numeric file for quantitative data (uses PLINK covariate file format)"
 		)
+		("data-summary,d",
+		 "Simply print input file stats (for PLINK .ped/.bed files)"
+		)
 		("snprank,s",
 		 "Perform SNPrank analysis *mode*"
 		)
@@ -246,9 +249,10 @@ int main(int argc, char* argv[]) {
 		"missing",
 		"r",
 		"r2",
-		"make-bed"
+		"make-bed",
+		"data-summary"
 	};
-	vector<string> modes(margs, margs + 17);
+	vector<string> modes(margs, margs + 18);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -759,6 +763,10 @@ int main(int argc, char* argv[]) {
 	// Create PLINK binary files
 	else if (vm.count("make-bed")) {
 		ph->writeBedFile();
+	}
+
+	else if (vm.count("data-summary")) {
+		// simply print PLINK stats
 	}
 
 	// Plink exit
