@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
 	string remfile = "";
 	string keepfile = "";
 	// plink option defaults
+	string miss_geno = "0";
 	double maf = 0.0;
 	double geno = 1;
 	double mind = 1;
@@ -168,6 +169,9 @@ int main(int argc, char* argv[]) {
 		)
 		("missing",
 		 "Missing rates (per individual, per SNP) *mode*"
+		)
+		("missing-genotype", po::value<string>(&miss_geno)->default_value("0", "\"0\""),
+		 "Missing genotype code"
 		)
 		("maf", po::value<double>(&maf)->default_value(0.0, "0.0"),
 		 "Minor allele frequency"
@@ -352,6 +356,14 @@ int main(int argc, char* argv[]) {
 	 * Missing rates 
 	 *******************************/
 	if (vm.count("missing")) par::report_missing = true;
+
+	/********************************
+	 * Missing genotype code
+	 *******************************/
+	if (vm.count("missing-genotoype")) {
+      par::missing_genotype = miss_geno;
+      par::out_missing_genotype = par::missing_genotype;
+	}
 
 	// Note:  Plink resets the following three values from their defaults 
 	// in options.cpp of 0.01, 0.1, and 0.1, respectively, to 0.0, 1, and 1, 
