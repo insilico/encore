@@ -604,11 +604,11 @@ int main(int argc, char* argv[]) {
 			r = new Regain(vm.count("compress-matrices"), sif_thresh, false, fdrprune);
 		r->run();
 		if (fdrprune){
-			r->writeRegain();
+			r->writeRegain(false);
 			r->fdrPrune(fdr);
 		}
-		r->writeRegain(fdrprune);
-		r->writePvals();
+		r->writeRegain(false, fdrprune);
+		r->writeRegain(true);
 		delete r;
 	}
 

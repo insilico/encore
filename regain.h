@@ -28,13 +28,13 @@ class Regain {
 	public:
 		Regain(bool compr, double sifthr, bool integrative, bool fdrpr = false);
 		~Regain();
-		virtual void run();
+		void run();
 		void mainEffect(int e1, bool numeric);
 		void addCovariates(Model &m);
 		void interactionEffect(int e1, bool numeric1, int e2, bool numeric2);
-		virtual void writeRegain(bool fdrprune = false);
-		virtual void writePvals();
-		virtual void fdrPrune(double fdr);
+		void writeRegain(bool pvalues, bool fdrprune = false);
+		void writePvals();
+		void fdrPrune(double fdr);
 		void writeRcomm(double T, double fdr);
 		static bool mecomp (const mat_el &l, const mat_el &r);
 
@@ -49,9 +49,8 @@ class Regain {
 		bool fdrprune;
 		// SIF interaction threshold
 		double sif_thresh;
-		// Output matrix files
+		// Output matrix file
 		ZOutput REGAIN_MATRIX;
-		ZOutput REGAIN_PMATRIX;
 		// in memory arrays
 		double** gainMatrix;
 		double** gainPMatrix;

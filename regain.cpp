@@ -324,23 +324,29 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 
 // write contents of reGAIN matrix to file.  If fdr is true, the filename is .pruned.regain, and
 // the log output reflects this.
-void Regain::writeRegain(bool fdrprune){
+void Regain::writeRegain(bool pvals, bool fdrprune){
+	double** gainMat;
+	if (pvals) gainMat = gainPMatrix;
+	else gainMat = gainMatrix;
 	// write the reGAIN matrix to file named <dataset>.regain
 	string regain_matrix_f = par::output_file_name;
-	// additional ext for integrative
-	string ext = intregain ? ".int" : "";
+	// additional prefixes/extension for output filename 
+	// FDR-pruned
+	string prnpre = fdrprune ? ".pruned" : "";
+	// p-values file
+	string pvpre = pvals ? ".pvals" : "";
+	// integrative
+	string intpre = intregain ? ".int" : "";
+	// compressed/binary file
 	string tail = compressed ? ".gz" : "";
-	if (fdrprune) {
-		// close stream from previous write
-		REGAIN_MATRIX.close();
-//		REGAIN_MATRIX.clear();
-		regain_matrix_f += ext + ".pruned.regain" + tail;
-		cout << "Writing FDR-pruned epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
-	}
-	else {
-		regain_matrix_f += ext + ".regain" + tail;
-		cout << "Writing epistasis REGAIN matrix [ " << regain_matrix_f << " ]" << endl;
-	}
+
+	// additional output text	
+	string pvtext = pvals ? "p-value " : "";
+	string fdrtext = fdrprune ? "FDR-pruned " : "";
+
+	regain_matrix_f += intpre + pvpre + prnpre +  ".regain" + tail;
+
+	cout << "Writing " << fdrtext << "epistasis REGAIN " << pvtext << "matrix [ " << regain_matrix_f << " ]" << endl;
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
 	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
@@ -359,59 +365,22 @@ void Regain::writeRegain(bool fdrprune){
 	for(int i=0; i < numattr; ++i) {
 		for(int j=i; j < numattr; ++j) {
 			// use absolute value (magnitude) of betas 
-			gainMatrix[i][j] = abs(gainMatrix[i][j]);	
+			gainMat[i][j] = abs(gainMat[i][j]);	
 			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
 				string tabs = "";
 				for (int k = 0; k < j; k++)
 					tabs += "\t";
-				REGAIN_MATRIX << tabs << dbl2str_fixed(gainMatrix[i][j], 6);
+				REGAIN_MATRIX << tabs << dbl2str_fixed(gainMat[i][j], 6);
 			}
 			else {
-				REGAIN_MATRIX << "\t" << dbl2str_fixed(gainMatrix[i][j], 6);
+				REGAIN_MATRIX << "\t" << dbl2str_fixed(gainMat[i][j], 6);
 			}
 		}
 		REGAIN_MATRIX << "\n";
 	}
-}
 
-// write contents of reGAIN p-values matrix to file.
-void Regain::writePvals(){
-	// write the beta p-values to file named <dataset>.pvals.regain
-	string REGAIN_PMATRIX_f = par::output_file_name;
-	// additional ext for integrative
-	string ext = intregain ? ".int" : "";
-	string tail = compressed ? ".gz" : "";
-	REGAIN_PMATRIX_f += ext + ".pvals.regain" + tail;
-	REGAIN_PMATRIX.open(REGAIN_PMATRIX_f.c_str(), compressed);
-	cout << "Writing epistasis REGAIN p-value matrix [ " << REGAIN_PMATRIX_f << " ]" << endl;
-	// write SNP column names
-	for(int cn=0; cn < PP->nl_all; ++cn) {
-		if(cn) {
-			REGAIN_PMATRIX << "\t" << PP->locus[cn]->name;
-		}
-		else {
-			REGAIN_PMATRIX << PP->locus[cn]->name;
-		}
-	}
-	// write numeric attribute column names
-	for(int cn=0; cn < par::nlist_number; ++cn)
-			REGAIN_PMATRIX << "\t" << PP->nlistname[cn];
-	REGAIN_PMATRIX << "\n";
-	// write matrix entries
-	for(int i=0; i < numattr; ++i) {
-		for(int j=i; j < numattr; ++j) {
-			if (j == i) {// fill in symmetric entries, replacing j < i with tabs
-				string tabs = "";
-				for (int k = 0; k < j; k++)
-					tabs += "\t";
-				REGAIN_PMATRIX << tabs << dbl2str_fixed(gainPMatrix[i][j], 6);
-			}
-			else {
-				REGAIN_PMATRIX << "\t" << dbl2str_fixed(gainPMatrix[i][j], 6);
-			}
-		}
-		REGAIN_PMATRIX << "\n";
-	}
+	// close ZOutput stream
+	REGAIN_MATRIX.close();
 }
 
 // Benjamini Hochberg FDR pruning - removes interaction 
@@ -507,17 +476,11 @@ Regain::~Regain(){
 	BETAS.close();
 	SIF.close();
 
-	// reGAIN matrix
-	REGAIN_MATRIX.close();  // free gain matrix memory
-
 	// free gain matrix memory
 	for(int i=0; i < numattr; ++i) {
 		delete [] gainMatrix[i];
 	}
 	delete [] gainMatrix;
-
-	// reGAIN p-value matrix
-	REGAIN_PMATRIX.close();  // free gain matrix memory
 
 	// free gain matrix memory
 	for(int i=0; i < numattr; ++i) {
