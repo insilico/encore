@@ -41,6 +41,8 @@ dependencies:
 
   * [Random Jungle](http://github.com/insilico/randomjungle)
 
+  * gfortran, sometimes installed alongside compiler tools
+
   * GNU Scientific library (libgsl)
 
   * libxml2
