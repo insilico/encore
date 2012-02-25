@@ -1,0 +1,9 @@
+2012-02-27, v1.0
+Initial public release
+* Command-line tool with several primary modes
+* Regression GAIN calculation, including combining SNPs and numeric
+attributes in an integrative analysis
+* Single nucleotide polymorphism rank (SNPrank)
+* Evaporative Cooling (EC) machine learning feature selection
+* PLINK data formats, filtering, and several PLINK command-line
+options supported
