@@ -174,7 +174,7 @@ This produces a file called `rankings.snprank`, in which the SNPs are ranked
 in descending order, along with their associated SNPrank and information gain
 (IG) scores.
 
-For additional examples, see our [Encore](http://insilico.utulsa.edu/encore)
+For additional examples, see the [Encore](http://insilico.utulsa.edu/encore)
 page on our research website.
 
 ### Contributors ###
