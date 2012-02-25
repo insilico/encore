@@ -15,6 +15,11 @@ config.status
 .libs
 # autotools files
 Makefile
+Makefile.in
+aclocal.m4
+build-aux
+stamp-h1
+configure
 libtool
 autom4te.cache
 # CTags files for vim
