@@ -32,7 +32,7 @@ and main effects, respectively.  EC is also available as a standalone
 
 Encore is being developed by the In Silico Research Group at the Tandy School
 of Computer Science of the [University of Tulsa](http://www.utulsa.edu).  Our
-research is supported by the NIH and William K. Warren foundation.  For more
+research is sponsored by the NIH and William K. Warren foundation.  For more
 details, visit our research [website](http://insilico.utulsa.edu).
 
 ### Dependencies ###
