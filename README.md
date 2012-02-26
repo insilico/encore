@@ -13,7 +13,7 @@ of analysis, including:
  * Eigenvector centrality ranking of top SNPs/quantitative attributes
  ([SNPrank](http://insilico.utulsa.edu/snprank))
  * Machine learning feature selection algorithms useful for filtering initially
-   large data sets to the top few thousands attributes for subsequent analysis
+   large data sets to the top few thousand attributes for subsequent analysis
  ([Evaporative Cooling](http://insilico.utulsa.edu/evaporative-cooling)/EC)
  * Data formats and encoding of SNP and quantitative data types
  (PLINK)
@@ -81,7 +81,7 @@ standard
 
 will generate the `Makefile`, compile and link the code, and copy the objects to
 the installation directory (default of `/usr/local`).  As is convention, headers
-are installed in `$PREFIX/include`, binary in `$PREFIX/bin`, and the library in
+are installed in `$PREFIX/include`, binary in `$PREFIX/bin`, and libraries in
 `$PREFIX/lib`.
 
 The resulting binary encore/encore.exe will run as a command-line tool.
