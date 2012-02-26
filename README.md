@@ -13,8 +13,8 @@ of analysis, including:
  * Eigenvector centrality ranking of top SNPs/quantitative attributes
  ([SNPrank](http://insilico.utulsa.edu/snprank))
  * Machine learning feature selection algorithms useful for filtering initially
- ([Evaporative Cooling](http://insilico.utulsa.edu/evaporative-cooling)/EC)
    large data sets to the top few thousands attributes for subsequent analysis
+ ([Evaporative Cooling](http://insilico.utulsa.edu/evaporative-cooling)/EC)
  * Data formats and encoding of SNP and quantitative data types
  (PLINK)
  * Several additional options ported from the PLINK library
