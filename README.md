@@ -176,6 +176,13 @@ This produces a file called `rankings.snprank`, in which the SNPs are ranked
 in descending order, along with their associated SNPrank and information gain
 (IG) scores.
 
+To invoke EC to filter the original SNP data,
+
+    ./encore -i snpdata.ped --ec -o filtered
+
+Additional EC-based options can be specified, such as `--ec-algorithm` and
+`--ec-snp-metric` to select the EC algorithm and SNP metric, respectively.
+
 For additional examples, see the [Encore](http://insilico.utulsa.edu/encore)
 page on our research website.
 
