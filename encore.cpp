@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 		 "Numeric file for quantitative data (uses PLINK covariate file format)"
 		)
 		("data-summary,d",
-		 "Simply print input file stats (for PLINK .ped/.bed files)"
+		 "Simply print input file stats (for PLINK .ped/.bed files) *mode*"
 		)
 		("snprank,s",
 		 "Perform SNPrank analysis *mode*"
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 		 "Include alternate phenotype file in analysis"
 		)
 		("make-bed",
-		 "Make .bed, .fam and .bim"
+		 "Make .bed, .fam and .bim *mode*"
 		)
 		("ci", po::value<double>(&ci)->default_value(0.95, "0.95"),
 		 "Confidence interval for CMH odds ratios"
@@ -215,10 +215,10 @@ int main(int argc, char* argv[]) {
 		 "PED file does not contain columns 1 (family ID)"
 		)
 		("r",
-		 "Pairwise SNPxSNP LD (r)"
+		 "Pairwise SNPxSNP LD (r) *mode*"
 		)
 		("r2",
-		 "Pairwise SNPxSNP LD (r^2)"
+		 "Pairwise SNPxSNP LD (r^2) *mode*"
 		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
