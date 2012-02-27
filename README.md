@@ -26,14 +26,18 @@ GWAS formats, filter data, and provide statistical/association tests.  See our
 PLINK project page for more details.
 
 Evaporative Cooling (EC) is another key library, and provides feature selection
-of SNPs and quantitative data, using ReliefF and Random Jungle for interactions
-and main effects, respectively.  EC is also available as a standalone
-[tool](http://insilico.utulsa.edu/evaporative-cooling).
+of SNPs and quantitative data, using ReliefF and Random Forest/Jungle for
+interactions and main effects, respectively.  EC is also available as a
+standalone [tool](http://insilico.utulsa.edu/evaporative-cooling).
 
-Encore is being developed by the In Silico Research Group at the Tandy School
-of Computer Science of the [University of Tulsa](http://www.utulsa.edu).  Our
-research is sponsored by the NIH and William K. Warren foundation.  For more
-details, visit our research [website](http://insilico.utulsa.edu).
+Encore is being developed by the McKinney Lab In Silico Research Group at the
+Tandy School of Computer Science of the
+[University of Tulsa](http://www.utulsa.edu).  Our research is sponsored by the
+NIH and William K. Warren foundation.  For more details, visit our research
+[website](http://insilico.utulsa.edu).
+
+If you downloaded a binary release, skip down to Usage for examples of running 
+Encore.
 
 ### Dependencies ###
 * EC library, available as a source release on the EC project page, and its
