@@ -4,10 +4,10 @@
 ### Encore
 ### Nick Davis (c) 2011-2012
 ### nick-davis@utulsa.edu
-### http://insilico.utulsa.edu
+### http://insilico.utulsa.edu/encore
 
 AC_PREREQ(2.61)
-AC_INIT(encore, 1.0, nick-davis@utulsa.edu, http://insilico.utulsa.edu)
+AC_INIT(encore, 1.0, nick-davis@utulsa.edu, http://insilico.utulsa.edu/encore)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE(encore, 1.0)

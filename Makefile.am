@@ -4,7 +4,7 @@
 ### Encore
 ### Nick Davis (c) 2011-2012
 ### nick-davis@utulsa.edu
-### http://insilico.utulsa.edu
+### http://insilico.utulsa.edu/encore
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
