@@ -94,6 +94,9 @@ int main(int argc, char* argv[]) {
 			("gamma", po::value<double>(&gamma)->default_value(0.85, "0.85"),
 			 "SNPrank algorithm damping factor"
 			)
+		("gain,g",
+		 "Calculate GAIN *mode*"
+		)
 		("regain,r", 
 		 "Calculate regression GAIN *mode*"
 		)
@@ -234,6 +237,7 @@ int main(int argc, char* argv[]) {
 
 	const char* margs[] = {
 		"snprank",
+		"gain",
 		"regain",
 		"ec",
 		"assoc",
@@ -252,7 +256,7 @@ int main(int argc, char* argv[]) {
 		"make-bed",
 		"data-summary"
 	};
-	vector<string> modes(margs, margs + 18);
+	vector<string> modes(margs, margs + 19);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -712,6 +716,51 @@ int main(int argc, char* argv[]) {
 		ec->WriteAttributeScores(outfile_pref);
 		delete ds;
 		delete ec;
+	}
+
+	// GAIN
+	else if (vm.count("gain")) {
+		// defaults for ID matching
+		string numericfile = "";
+		vector<string> ind_ids;
+		vector<string> numeric_ids;
+		vector<string> pheno_ids;
+		bool datasetLoaded = false;
+
+		// find IDs for loading from the dataset
+		if(!GetMatchingIds(numericfile, phenofile, numeric_ids, pheno_ids, ind_ids))
+			cerr << "Error: could not get matching IDs from numeric " <<
+				"and/or phenotype files" << endl;
+		// initialize dataset by extension
+		Dataset* ds = 0;
+		ds  = ChooseSnpsDatasetByExtension(infile);
+		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
+		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
+
+		// file data stats
+		ds->PrintStats();
+
+		double** gainMatrix = 0;
+		/// create an attribute interactiom matrix
+		vector<unsigned int> attributeIds = ds->MaskGetAttributeIndices(DISCRETE_TYPE);
+		int numAttributes = attributeIds.size();
+		gainMatrix = new double*[numAttributes];
+		for(int i = 0; i < numAttributes; ++i) {
+			gainMatrix[i] = new double[numAttributes];
+			for(int j = 0; j < numAttributes; ++j)
+				gainMatrix[i][j] = 0.0;
+		}
+		if(ds->CalculateGainMatrix(gainMatrix, outfile_pref + ".gain")) {
+			for(unsigned int i=0; i < ds->NumAttributes(); ++i)
+				delete [] gainMatrix[i];
+			delete [] gainMatrix;
+		}
+		else {
+			cerr << "ERROR: Could not calculate a GAIN matrix." << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		delete ds;
 	}
 
 	// Association tests and models
