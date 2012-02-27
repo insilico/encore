@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 		 "Numeric file for quantitative data (uses PLINK covariate file format)"
 		)
 		("data-summary,d",
-		 "Simply print input file stats (for PLINK .ped/.bed files)"
+		 "Simply print input file stats (for PLINK .ped/.bed files) *mode*"
 		)
 		("snprank,s",
 		 "Perform SNPrank analysis *mode*"
@@ -94,6 +94,9 @@ int main(int argc, char* argv[]) {
 			("gamma", po::value<double>(&gamma)->default_value(0.85, "0.85"),
 			 "SNPrank algorithm damping factor"
 			)
+		("gain,g",
+		 "Calculate GAIN *mode*"
+		)
 		("regain,r", 
 		 "Calculate regression GAIN *mode*"
 		)
@@ -140,7 +143,7 @@ int main(int argc, char* argv[]) {
 		 "Include alternate phenotype file in analysis"
 		)
 		("make-bed",
-		 "Make .bed, .fam and .bim"
+		 "Make .bed, .fam and .bim *mode*"
 		)
 		("ci", po::value<double>(&ci)->default_value(0.95, "0.95"),
 		 "Confidence interval for CMH odds ratios"
@@ -215,10 +218,10 @@ int main(int argc, char* argv[]) {
 		 "PED file does not contain columns 1 (family ID)"
 		)
 		("r",
-		 "Pairwise SNPxSNP LD (r)"
+		 "Pairwise SNPxSNP LD (r) *mode*"
 		)
 		("r2",
-		 "Pairwise SNPxSNP LD (r^2)"
+		 "Pairwise SNPxSNP LD (r^2) *mode*"
 		)
 		("ld-prune,l",
 		 "Linkage disequilibrium (LD) pruning *mode*"
@@ -234,6 +237,7 @@ int main(int argc, char* argv[]) {
 
 	const char* margs[] = {
 		"snprank",
+		"gain",
 		"regain",
 		"ec",
 		"assoc",
@@ -252,7 +256,7 @@ int main(int argc, char* argv[]) {
 		"make-bed",
 		"data-summary"
 	};
-	vector<string> modes(margs, margs + 18);
+	vector<string> modes(margs, margs + 19);
 	PlinkHandler* ph;
 	
 	/********************************
@@ -279,22 +283,22 @@ int main(int argc, char* argv[]) {
 	}
 
 	else if (nummodes > 1) {
-			cerr << "Error: Only one mode may be specified" << endl << endl << desc << endl;
-			return 1;
+		cerr << "Error: Only one mode may be specified" << endl << endl << desc << endl;
+		return 1;
 	}
 	
 	/* Plink data file options *********************************/
 	if (vm.count("map3"))
-	     par::map3 = true;
+		par::map3 = true;
 
 	if (vm.count("no-sex"))
-	     par::ped_skip_sex = true;
+		par::ped_skip_sex = true;
 
 	if (vm.count("allow-no-sex"))
-	     par::ignore_missing_sex = true;
+		par::ignore_missing_sex = true;
 
 	if (vm.count("no-parents"))
-	     par::ped_skip_parents = true;
+		par::ped_skip_parents = true;
 
 	if (vm.count("no-fid"))
 		par::ped_skip_fid = true;
@@ -454,7 +458,7 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Covar file
 	 *******************************/
-	if (vm.count("covar")){
+	if (vm.count("covar")) {
 		// validate that covar file is used with proper modes
 		if (!(vm.count("regain") || vm.count("linear"))) {
 			cerr << "Error: Covariate file may only be used with --regain or --linear"
@@ -579,51 +583,51 @@ int main(int argc, char* argv[]) {
 	 * Validate mode sub-options
 	 ********************************/
 	if (!vm["gamma"].defaulted() && !vm.count("snprank")) {
-			cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (vm.count("compress-matrices") && !vm.count("regain")) {
-			cerr << "Error: --compress-matrices must be used with --regain" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: --compress-matrices must be used with --regain" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (!vm["sif-threshold"].defaulted() && !vm.count("regain")) {
-			cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: --sif-threshold must be used with --regain" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (vm.count("fdr-prune") && !vm.count("regain")) {
-			cerr << "Error: --fdr-prune must be used with --regain" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: --fdr-prune must be used with --regain" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (!vm["fdr"].defaulted() && !vm.count("regain")) {
-			cerr << "Error: --fdr must be used with --regain" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: --fdr must be used with --regain" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (vm.count("ec-algorithm") && !vm.count("ec")) {
-			cerr << "Error: ec-algorithm must be used with --ec" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: ec-algorithm must be used with --ec" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (vm.count("ec-snp-metric") && !vm.count("ec")) {
-			cerr << "Error: ec-snp-metric must be used with --ec" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: ec-snp-metric must be used with --ec" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	if (vm.count("ec-num-target") && !vm.count("ec")) {
-			cerr << "Error: ec-num-target must be used with --ec" << endl << endl <<
-				desc << endl;
-			return 1;
+		cerr << "Error: ec-num-target must be used with --ec" << endl << endl <<
+			desc << endl;
+		return 1;
 	}
 
 	/*********************************
@@ -648,7 +652,8 @@ int main(int argc, char* argv[]) {
 		bool fdrprune = vm.count("fdr-prune");
 		Regain* r;
 		// if --numeric passed, create an integrative regain object
-		if (vm.count("numeric")) r = new Regain(vm.count("compress-matrices"), sif_thresh, true,  fdrprune);
+		if (vm.count("numeric"))
+			r = new Regain(vm.count("compress-matrices"), sif_thresh, true,  fdrprune);
 		else 
 			r = new Regain(vm.count("compress-matrices"), sif_thresh, false, fdrprune);
 		r->run();
@@ -666,7 +671,8 @@ int main(int argc, char* argv[]) {
 		// EC options map
 		map<string,string> opts;
 		// required options for EC
-		opts.insert(pair<string,string>("ec-num-target", lexical_cast<string>(ec_numt)));
+		opts.insert(pair<string,string>("ec-num-target",
+					lexical_cast<string>(ec_numt)));
 		opts.insert(pair<string,string>("snp-data", infile));
 		opts.insert(pair<string,string>("out-files-prefix", outfile_pref));
 
@@ -688,16 +694,14 @@ int main(int argc, char* argv[]) {
 		else opts.insert(pair<string,string>("snp-metric", ec_sm));
 
 		// find IDs for loading from the dataset
-		if(!GetMatchingIds(numericfile, phenofile,
-						numeric_ids, pheno_ids, ind_ids))
+		if(!GetMatchingIds(numericfile, phenofile, numeric_ids, pheno_ids, ind_ids))
 			cerr << "Error: could not get matching IDs from numeric " <<
 				"and/or phenotype files" << endl;
 		// initialize dataset by extension
 		Dataset* ds = 0;
 		ds  = ChooseSnpsDatasetByExtension(infile);
 		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
-		if (!loaded)
-			cerr << "Error: Failure to load dataset for analysis" << endl;
+		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
 
 		// file data stats 
 		ds->PrintStats();
@@ -712,6 +716,51 @@ int main(int argc, char* argv[]) {
 		ec->WriteAttributeScores(outfile_pref);
 		delete ds;
 		delete ec;
+	}
+
+	// GAIN
+	else if (vm.count("gain")) {
+		// defaults for ID matching
+		string numericfile = "";
+		vector<string> ind_ids;
+		vector<string> numeric_ids;
+		vector<string> pheno_ids;
+		bool datasetLoaded = false;
+
+		// find IDs for loading from the dataset
+		if(!GetMatchingIds(numericfile, phenofile, numeric_ids, pheno_ids, ind_ids))
+			cerr << "Error: could not get matching IDs from numeric " <<
+				"and/or phenotype files" << endl;
+		// initialize dataset by extension
+		Dataset* ds = 0;
+		ds  = ChooseSnpsDatasetByExtension(infile);
+		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
+		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
+
+		// file data stats
+		ds->PrintStats();
+
+		double** gainMatrix = 0;
+		/// create an attribute interactiom matrix
+		vector<unsigned int> attributeIds = ds->MaskGetAttributeIndices(DISCRETE_TYPE);
+		int numAttributes = attributeIds.size();
+		gainMatrix = new double*[numAttributes];
+		for(int i = 0; i < numAttributes; ++i) {
+			gainMatrix[i] = new double[numAttributes];
+			for(int j = 0; j < numAttributes; ++j)
+				gainMatrix[i][j] = 0.0;
+		}
+		if(ds->CalculateGainMatrix(gainMatrix, outfile_pref + ".gain")) {
+			for(unsigned int i=0; i < ds->NumAttributes(); ++i)
+				delete [] gainMatrix[i];
+			delete [] gainMatrix;
+		}
+		else {
+			cerr << "ERROR: Could not calculate a GAIN matrix." << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		delete ds;
 	}
 
 	// Association tests and models
@@ -745,9 +794,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// LD-based pruning
-	else if (vm.count("ld-prune")) {
-		ph->LDPrune();
-	}
+	else if (vm.count("ld-prune")) ph->LDPrune();
 
 	// LD-pruning using r and r^2
   	else if(vm.count("r") || vm.count("r2")) {
@@ -761,13 +808,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Create PLINK binary files
-	else if (vm.count("make-bed")) {
-		ph->writeBedFile();
-	}
+	else if (vm.count("make-bed")) ph->writeBedFile();
 
-	else if (vm.count("data-summary")) {
-		// simply print PLINK stats
-	}
+	// Simply print PLINK stats
+	else if (vm.count("data-summary")) {}
 
 	// Plink exit
 	if (!vm.count("snprank"))
