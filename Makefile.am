@@ -39,7 +39,7 @@ AM_CXXFLAGS += -D_FILE_OFFSET_BITS=64 -Dfopen64=fopen
 endif
 
 if SYS_WIN
-AM_CXXFLAGS += -static -static
+AM_CXXFLAGS += -static -static-libgcc -static-libstdc++
 endif
 
 # dir to install headers for encore library
