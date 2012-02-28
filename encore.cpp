@@ -40,10 +40,6 @@
 using namespace boost;
 namespace po = boost::program_options;
 
-/********************************
- * required plink data structures
- *******************************/
-
 int main(int argc, char* argv[]) {
 	// command line variables
 	// data files
@@ -55,6 +51,7 @@ int main(int argc, char* argv[]) {
 	string extrfile = "";
 	string remfile = "";
 	string keepfile = "";
+	string exclfile = "";
 	// plink option defaults
 	string miss_geno = "0";
 	double ci = 0.95;
@@ -133,6 +130,9 @@ int main(int argc, char* argv[]) {
 		("keep", po::value<string>(&keepfile),
 		 "Keep list of individuals from specified file"
 		)
+		("exclude", po::value<string>(&exclfile),
+		 "Exclude list of SNPs"
+		)
 		("prune",
 		 "Remove individuals with missing phenotypes"
 		)
@@ -198,6 +198,9 @@ int main(int argc, char* argv[]) {
 		)
 		("hwe2", po::value<double>(&hwe2)->default_value(0.001, "0.001"),
 		 "Hardy-Weinberg disequilibrium p-value (asymptotic)"
+		)
+		("1",
+		 "0/1 unaffected/affected coding"
 		)
 		("filter-founders",
 		 "Include only founders"
@@ -288,6 +291,9 @@ int main(int argc, char* argv[]) {
 	}
 	
 	/* Plink data file options *********************************/
+	if (vm.count("1"))
+		par::coding01 = true;
+
 	if (vm.count("map3"))
 		par::map3 = true;
 
@@ -530,6 +536,27 @@ int main(int argc, char* argv[]) {
 
 		// read extract file SNPs using PLINK
 		else ph->readExtractFile(extrfile);
+	}
+
+	/********************************
+	 * Exclude file
+	 *******************************/
+	if (vm.count("exclude")) {
+		// exclude validation
+		if (vm.count("snprank") || vm.count("ec") || vm.count("ld-prune")) {
+			cerr << "Error: Extract file cannot be used with "\
+				"--snprank, --ec, or --ld-prune" << endl << desc << endl;
+			return 1;
+		}
+
+		// ensure exclude file exists
+		else if (!boost::filesystem::exists(exclfile)) {
+			cerr << "Error: Exclude file " << exclfile << " does not exist" << endl;
+			return 1;
+		}
+
+		// read exclude file SNPs using PLINK
+		else ph->readExcludeFile(exclfile);
 	}
 	
 	/********************************
