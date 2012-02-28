@@ -121,6 +121,7 @@ To see the help screen,
       --extract arg                 Extract list of SNPs from specified file
       --remove arg                  Remove list of individuals from specified file
       --keep arg                    Keep list of individuals from specified file
+      --exclude arg                 Exclude list of SNPs
       --prune                       Remove individuals with missing phenotypes
       --covar arg                   Include covariate file in analysis
       --pheno arg                   Include alternate phenotype file in analysis
@@ -147,6 +148,7 @@ To see the help screen,
       --hwe arg (=0.001)            Hardy-Weinberg disequilibrium p-value (exact)
       --hwe2 arg (=0.001)           Hardy-Weinberg disequilibrium p-value 
                                     (asymptotic)
+      --1                           0/1 unaffected/affected coding
       --filter-founders             Include only founders
       --map3                        Specify 3-column MAP file format
       --no-sex                      PED file does not contain column 5 (sex)
