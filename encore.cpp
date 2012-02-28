@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 	// EC
 	string ec_algo = "all";
 	string ec_sm = "gm";
-	double ec_numt = 0;
+	int ec_numt = 0;
 		   
 	po::options_description desc("Encore - a tool for analysis of GWAS and other "
 			"biological data.\nUsage:  encore -i snpdata.ped [mode] -o output-prefix");
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
 			("ec-snp-metric", po::value<string>(&ec_sm),
 			 "EC SNP metric (gm|am)"
 			)
-			("ec-num-target", po::value<double>(&ec_numt),
+			("ec-num-target", po::value<int>(&ec_numt),
 			 "EC target number of attributes to keep"
 			)
 		("extract", po::value<string>(&extrfile),
