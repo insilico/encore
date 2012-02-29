@@ -121,16 +121,25 @@ BOOST_SYSTEM
 BOOST_FILESYSTEM
 
 # Random Jungle
-AC_CHECK_LIB([rjungle], [main])
-# libr, used in Random Jungle
-AC_CHECK_LIB([lr], [main])
+AC_CHECK_LIB([rjungle], [main],
+	[],
+	AC_MSG_ERROR(test for rjungle failed)
+)
+# lr, used in Random Jungle
+AC_CHECK_LIB([lr], [main],
+	[],
+	AC_MSG_ERROR(test for lr failed)
+)
 
 # GNU Scientific Library (GSL)
 # gsl.m4
 AX_PATH_GSL(1.8,, AC_MSG_ERROR([could not find required version of GSL]))
 
 # EC
-AC_CHECK_LIB([ec], [main])
+AC_CHECK_LIB([ec], [main],
+	[],
+	AC_MSG_ERROR(test for ec failed)
+)
 			 
 AC_ARG_ENABLE([force32bit],
 	[AS_HELP_STRING([--enable-force32bit],
