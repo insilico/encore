@@ -46,6 +46,9 @@ endif
 libencore_ladir=$(includedir)/encore
 
 # build encore binary, linking to library built above
-bin_PROGRAMS = encore
+bin_PROGRAMS = encore encore_static
 encore_SOURCES =  encore.cpp
 encore_LDADD= -lencore $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_FILESYSTEM_LIBS)
+encore_static_SOURCES = encore.cpp
+encore_static_LDFLAGS= -all-static -static-libgcc -static-libstdc++
+encore_static_LDADD= -lencore $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_FILESYSTEM_LIBS)
