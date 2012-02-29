@@ -1,6 +1,8 @@
 # the built executable
 encore
 encore.exe
+encore_static
+encore_static.exe
 # vim swap files
 *.swp
 # configure output
