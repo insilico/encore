@@ -55,8 +55,8 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 	string mebeta_f = par::output_file_name + ext + ".mebetas";
 	BETAS.open(beta_f.c_str(), ios::out);
 	MEBETAS.open(mebeta_f.c_str(), ios::out);
-	cout << "Writing interaction beta values to [ " << beta_f << " ]" << endl;
-	cout << "Writing main effect beta values to [ " << mebeta_f << " ]" << endl;
+	PP->printLOG("Writing interaction beta values to [ " + beta_f + " ]\n");
+	PP->printLOG("Writing main effect beta values to [ " + mebeta_f + " ]\n");
 	BETAS.precision(6);
 	MEBETAS.precision(6);
 	// print header
@@ -78,7 +78,7 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 
 	string sif_f = par::output_file_name + ext + ".sif";
 	SIF.open(sif_f.c_str(), ios::out);
-	cout << "Writing Cytoscape network file (SIF) to [ " << sif_f << " ]" << endl;
+	PP->printLOG("Writing Cytoscape network file (SIF) to [ " + sif_f + " ]\n");
 	SIF.precision(6);
 	
 	regainMatrix = new double*[numattr];
@@ -333,7 +333,7 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 
 	regain_matrix_f += intpre + pvpre + prnpre +  ".regain" + tail;
 
-	cout << "Writing " << fdrtext << "epistasis REGAIN " << pvtext << "matrix [ " << regain_matrix_f << " ]" << endl;
+	PP->printLOG("Writing " + fdrtext + "epistasis REGAIN " + pvtext + "matrix [ " + regain_matrix_f + " ]\n");
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
 	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
@@ -374,7 +374,7 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 // terms from reGAIN matrix based on BH FDR threshold
 // code based on method described in All of Statistics p. 167
 void Regain::fdrPrune(double fdr){
-	cout << "Calculating Benjamini Hochberg FDR for pruning" << endl;
+	PP->printLOG("Calculating Benjamini Hochberg FDR for pruning\n");
 	int m = gainPint.size();
 	// sort gain interaction mal_el type by p-value, maintaining
 	// gainPMatrix location (row, col) with sorted values
@@ -395,14 +395,14 @@ void Regain::fdrPrune(double fdr){
 
 	// BH threshold condition not met with any p-values, so exit
 	if (R == -1){
-		cout << "No p-value meets BH threshold criteria, so nothing pruned" << endl;
+		PP->printLOG("No p-value meets BH threshold criteria, so nothing pruned\n");
 		return;
 	}
 
 	// BH rejection threshold
 	double T = gainPint[R].first;
-	cout << "BH rejection threshold: T = " + dbl2str(T) << ", R = " + int2str(R) + "" << endl;
-	cout << "Pruning reGAIN interaction terms with p-values <= T (" + dbl2str(T) + ")" << endl;
+	PP->printLOG("BH rejection threshold: T = " + dbl2str(T) + ", R = " + int2str(R) + "\n");
+	PP->printLOG("Pruning reGAIN interaction terms with p-values <= T (" + dbl2str(T) + ")\n");
 
 	// now prune (set to 0.0) all values at or below R index
 	for (int i = 0; i <= R; i++) {
@@ -411,7 +411,7 @@ void Regain::fdrPrune(double fdr){
 		regainMatrix[p.first][p.second] = 0.0;
 		regainMatrix[p.second][p.first] = 0.0;
 	}
-	cout << "Pruned " + int2str(R + 1) + " values from reGAIN interaction terms" << endl;
+	PP->printLOG("Pruned " + int2str(R + 1) + " values from reGAIN interaction terms\n");
 	// use threshold to write R commands to generate FDR plot 
 	writeRcomm(T, fdr);
 }
@@ -422,7 +422,7 @@ void Regain::writeRcomm(double T, double fdr){
 	RCOMM.precision(6);
 	string fdr_r_file = par::output_file_name + ".R";
 	string betas_file = par::output_file_name + ".betas";
-	cout << "Writing R commands to generate FDR plot [" << fdr_r_file << "]" << endl;
+	PP->printLOG("Writing R commands to generate FDR plot [" + fdr_r_file + "]\n");
 
 	RCOMM.open(fdr_r_file.c_str(), ios::out);
 	RCOMM << "fdrvars <- read.delim(\"" << betas_file << "\")" << endl;
