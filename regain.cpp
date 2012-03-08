@@ -402,16 +402,16 @@ void Regain::fdrPrune(double fdr){
 	// BH rejection threshold
 	double T = gainPint[R].first;
 	PP->printLOG("BH rejection threshold: T = " + dbl2str(T) + ", R = " + int2str(R) + "\n");
-	PP->printLOG("Pruning reGAIN interaction terms with p-values <= T (" + dbl2str(T) + ")\n");
+	PP->printLOG("Pruning reGAIN interaction terms with p-values > T (" + dbl2str(T) + ")\n");
 
-	// now prune (set to 0.0) all values at or below R index
-	for (int i = 0; i <= R; i++) {
+	// now prune (set to 0.0) all values greater than R index
+	for (int i = R; i < m; i++) {
 		pair<int,int> p = gainPint[i].second;
 		// symmetric matrix, so set [e1][e2] and [e2][e1]
 		regainMatrix[p.first][p.second] = 0.0;
 		regainMatrix[p.second][p.first] = 0.0;
 	}
-	PP->printLOG("Pruned " + int2str(R + 1) + " values from reGAIN interaction terms\n");
+	PP->printLOG("Pruned " + int2str(m - R) + " values from reGAIN interaction terms\n");
 	// use threshold to write R commands to generate FDR plot 
 	writeRcomm(T, fdr);
 }
