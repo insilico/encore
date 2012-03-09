@@ -426,15 +426,17 @@ void Regain::writeRcomm(double T, double fdr){
 
 	RCOMM.open(fdr_r_file.c_str(), ios::out);
 	RCOMM << "fdrvars <- read.delim(\"" << betas_file << "\")" << endl;
+	RCOMM << "library(calibrate)" << endl;
 	RCOMM << "betas <- fdrvars$B_3" << endl;
 	RCOMM << "pvals <- fdrvars$B_3.P.VAL" << endl;
+	RCOMM << "betas <- abs(betas)" << endl;
 	RCOMM << "T <- " << T << endl;
-	RCOMM << "fdr <- " << fdr << endl;
+	RCOMM << "partition <- " << fdr << endl;
 	RCOMM << "plot(betas, -log10(pvals), type=\"n\")" << endl;
-	RCOMM << "abline(h=-log10(T), col=\"green4\" lwd=3)" << endl;
+	RCOMM << "abline(h=-log10(T), col=\"green4\", lwd=3)" << endl;
 	RCOMM << "accept <- which(-log10(pvals) > -log10(T))" << endl;
 	RCOMM << "reject <- which(-log10(pvals) <= -log10(T))" << endl;
-	RCOMM << "prnidx <- fdr * length(betas[accept])" << endl;
+	RCOMM << "prnidx <- partition * length(betas[accept])" << endl;
 	RCOMM << "srtaccbetas <- sort(betas[accept])" << endl;
 	RCOMM << "prnval <- srtaccbetas[prnidx]" << endl;
 	RCOMM << "if(prnidx%%1!=0){" << endl;
@@ -443,12 +445,16 @@ void Regain::writeRcomm(double T, double fdr){
 	RCOMM << "prunex <- which(betas <= prnval)" << endl;
 	RCOMM << "pruney <- which(-log10(pvals) > -log10(T))" << endl;
 	RCOMM << "prune <- intersect(prunex, pruney)" << endl;
+	RCOMM << "accept <- setdiff(accept, prune)" << endl;
 	RCOMM << "points(betas[accept], -log10(pvals[accept]), bg=\"green4\", pch=21)" << endl;
-	RCOMM << "points(betas[reject], -log10(pvals[reject]), bg=\"blue\", pch=21)" << endl;
-	RCOMM << "points(betas[prune], -log10(pvals[prune]), bg=\"red\", pch=21)" << endl;
-	RCOMM << "abline(v=prnval), col=\"red\", lwd=3)" << endl;
+	RCOMM << "snp1 <- fdrvars$SNP1" << endl;
+	RCOMM << "snp2 <- fdrvars$SNP2" << endl;
+	RCOMM << "textxy(betas[accept], -log10(pvals[accept]), paste(snp1, snp2, sep=\",\")[accept])" << endl;
+	RCOMM << "points(betas[reject], -log10(pvals[reject]), bg=\"blue\", pch=22)" << endl;
+	RCOMM << "points(betas[prune], -log10(pvals[prune]), bg=\"red\", pch=24)" << endl;
+	RCOMM << "abline(v=prnval, col=\"red\", lwd=3)" << endl;
 	RCOMM << "title(\"Scatter plot of -log10 transformed p-values vs. regression betas\")" << endl;
-	RCOMM << "legend(\"topleft\", inset=.05, title=\"Type\", c(\"Accepted\", \"Rejected\", \"Pruned\"), pch=c(21,21, 21), pt.bg=c(\"green4\", \"blue\", \"red\"))" << endl;
+	RCOMM << "legend(\"topleft\", inset=.05, title=\"Type\", c(\"Accepted\", \"Rejected\", \"Pruned\"), pch=c(21,22, 24), pt.bg=c(\"green4\", \"blue\", \"red\"))" << endl;
 	RCOMM.close();
 }
 
