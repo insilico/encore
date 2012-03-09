@@ -205,7 +205,7 @@ void Regain::addCovariates(Model &m){
 void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 	Model * lm;
 
-	// logisic regression for binary phenotypes, linear otherwise
+	// logistic regression for binary phenotypes, linear otherwise
 	if(par::bt) {
 		LogisticModel * m = new LogisticModel(PP);
 		lm = m;
