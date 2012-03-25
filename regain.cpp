@@ -443,7 +443,7 @@ void Regain::writeRcomm(double T, double fdr){
 	RCOMM << "prnval <- (srtaccbetas[floor(prnidx)] + srtaccbetas[ceiling(prnidx)]) / 2" << endl;
 	RCOMM << "}" << endl;
 	RCOMM << "prunex <- which(betas <= prnval)" << endl;
-	RCOMM << "pruney <- which(-log10(pvals) > -log10(T))" << endl;
+	RCOMM << "pruney <- which(-log10(pvals) >= -log10(T))" << endl;
 	RCOMM << "prune <- intersect(prunex, pruney)" << endl;
 	RCOMM << "accept <- setdiff(accept, prune)" << endl;
 	RCOMM << "points(betas[accept], -log10(pvals[accept]), bg=\"green4\", pch=21)" << endl;
