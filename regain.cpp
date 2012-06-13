@@ -35,16 +35,17 @@
 extern Plink* PP;
 
 // constructor
-Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
+Regain::Regain(bool compr, double sifthr, bool integrative, bool compo, bool fdrpr) {
 	// set class vars to passed args
 	compressed = compr;
 	sif_thresh = sifthr;
 	intregain = integrative;
+	component = compo;
 	fdrprune = fdrpr;
 
 	// set integrative/normal regain vars
 	// additional ext for integrative
-	string ext = intregain ? ".int" : "";
+	string ext = intregain ? ".block" : "";
 	// header in betas files
 	string hdr = intregain ? "attr" : "SNP";
 	// total number of attributes
@@ -80,6 +81,20 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 	SIF.open(sif_f.c_str(), ios::out);
 	PP->printLOG("Writing Cytoscape network file (SIF) to [ " + sif_f + " ]\n");
 	SIF.precision(6);
+	if (component) {
+		string snp_sif_f = par::output_file_name + ".snp.sif";
+		string num_sif_f = par::output_file_name + ".num.sif";
+		string int_sif_f = par::output_file_name + ".int.sif";
+		SNP_SIF.open(snp_sif_f.c_str(), ios::out);
+		PP->printLOG("Writing SNP Cytoscape network file (SIF) to [ " + snp_sif_f + " ]\n");
+		SNP_SIF.precision(6);
+		NUM_SIF.open(num_sif_f.c_str(), ios::out);
+		PP->printLOG("Writing numeric Cytoscape network file (SIF) to [ " + num_sif_f + " ]\n");
+		NUM_SIF.precision(6);
+		INT_SIF.open(int_sif_f.c_str(), ios::out);
+		PP->printLOG("Writing integrative Cytoscape network file (SIF) to [ " + int_sif_f + " ]\n");
+		INT_SIF.precision(6);
+	}
 	
 	regainMatrix = new double*[numattr];
 	regainPMatrix = new double*[numattr];
@@ -299,6 +314,30 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 		if (numeric2)
 			SIF << PP->nlistname[e2 - PP->nl_all] << endl;
 		else SIF << PP->locus[e2]->name << endl;
+
+		if (component) {
+			// numeric
+			if (numeric1 && numeric2) {
+				NUM_SIF << PP->nlistname[e1 - PP->nl_all] << "\t" << abs(b[b.size() - 1])  << "\t";
+				NUM_SIF << PP->nlistname[e2 - PP->nl_all] << endl;
+			}
+			// integrative
+			else if (numeric1 && !numeric2) {
+				INT_SIF << PP->nlistname[e1 - PP->nl_all] << "\t" << abs(b[b.size() - 1])  << "\t";
+				INT_SIF << PP->locus[e2]->name << endl;
+			}
+			// integrative
+			else if (!numeric1 && numeric2) {
+				INT_SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t";
+				INT_SIF << PP->nlistname[e2 - PP->nl_all] << endl;
+			}
+			// SNP
+			else {
+				SNP_SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t";
+				SNP_SIF << PP->locus[e2]->name << endl;
+			}
+		}
+
 	}
 #ifdef _OPENMP
 }
@@ -316,14 +355,15 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 	if (pvals) regainMat = regainPMatrix;
 	else regainMat = regainMatrix;
 	// write the reGAIN matrix to file named <dataset>.regain
-	string regain_matrix_f = par::output_file_name;
+	string snp_f = par::output_file_name, num_f = par::output_file_name, 
+		   int_f = par::output_file_name, regain_matrix_f = par::output_file_name;
 	// additional prefixes/extension for output filename 
 	// FDR-pruned
 	string prnpre = fdrprune ? ".pruned" : "";
 	// p-values file
 	string pvpre = pvals ? ".pvals" : "";
 	// integrative
-	string intpre = intregain ? ".int" : "";
+	string intpre = intregain ? ".block" : "";
 	// compressed/binary file
 	string tail = compressed ? ".gz" : "";
 
@@ -335,19 +375,51 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 
 	PP->printLOG("Writing " + fdrtext + "epistasis REGAIN " + pvtext + "matrix [ " + regain_matrix_f + " ]\n");
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
+	if (component) {
+		snp_f += ".snp" + pvpre + prnpre +  ".regain" + tail;
+		PP->printLOG("Writing " + fdrtext + "SNP epistasis REGAIN " + pvtext + "matrix [ " + snp_f + " ]\n");
+		SNP_MATRIX.open(snp_f.c_str(), compressed);
+
+		num_f += ".num" + pvpre + prnpre +  ".regain" + tail;
+		PP->printLOG("Writing " + fdrtext + "numeric epistasis REGAIN " + pvtext + "matrix [ " + num_f + " ]\n");
+		NUM_MATRIX.open(num_f.c_str(), compressed);
+
+		int_f += ".int" + pvpre + prnpre +  ".regain" + tail;
+		PP->printLOG("Writing " + fdrtext + "integrative epistasis REGAIN " + pvtext + "matrix [ " + int_f + " ]\n");
+		INT_MATRIX.open(int_f.c_str(), compressed);
+	}
 	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
 		if(cn) {
 			REGAIN_MATRIX << "\t" << PP->locus[cn]->name;
+			if (component) SNP_MATRIX << "\t" << PP->locus[cn]->name;
 		}
 		else {
 			REGAIN_MATRIX << PP->locus[cn]->name;
+			if (component) SNP_MATRIX << PP->locus[cn]->name;
 		}
 	}
 	// write numeric attribute column names
-	for(int cn=0; cn < par::nlist_number; ++cn)
-			REGAIN_MATRIX << "\t" << PP->nlistname[cn];
+	for(int cn=0; cn < par::nlist_number; ++cn) {
+		if (!cn && !PP->nl_all) REGAIN_MATRIX << PP->nlistname[cn];
+		else REGAIN_MATRIX << "\t" << PP->nlistname[cn];
+		if (component) {
+			if (cn) {
+				NUM_MATRIX << "\t" << PP->nlistname[cn];
+				INT_MATRIX << "\t" << PP->nlistname[cn];
+			}
+			else {
+				NUM_MATRIX << PP->nlistname[cn];
+				INT_MATRIX << PP->nlistname[cn];
+			}
+		}
+	}
 	REGAIN_MATRIX << "\n";
+	if (component) {
+		NUM_MATRIX << "\n";
+		INT_MATRIX << "\n";
+		SNP_MATRIX << "\n";
+	}
 	// write matrix entries
 	for(int i=0; i < numattr; ++i) {
 		for(int j=i; j < numattr; ++j) {
@@ -358,16 +430,48 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 				for (int k = 0; k < j; k++)
 					tabs += "\t";
 				REGAIN_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
+				if (component) {
+					if (i < PP->nl_all) SNP_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
+					else { 
+						tabs = "";
+						for (int k = PP->nl_all; k < j; k++)
+							tabs += "\t";
+						NUM_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
+					}
+				}
 			}
 			else {
 				REGAIN_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+				if (component) {
+					if (i < PP->nl_all) {
+						if (j < PP->nl_all) SNP_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+						else { 
+							if (j == PP->nl_all) 
+								INT_MATRIX << dbl2str_fixed(regainMat[i][j], 6);
+							else INT_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+						}
+					}
+					else NUM_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+				}
 			}
 		}
 		REGAIN_MATRIX << "\n";
+		if (component) {
+			if (i < PP->nl_all) {
+				SNP_MATRIX << "\n";
+				INT_MATRIX << "\n";
+			}
+			else NUM_MATRIX << "\n";
+		}
 	}
 
 	// close output stream
 	REGAIN_MATRIX.close();
+	if (component) {
+		SNP_MATRIX.close();
+		NUM_MATRIX.close();
+		INT_MATRIX.close();
+	}
 }
 
 // Benjamini Hochberg FDR pruning - removes interaction 
