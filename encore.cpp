@@ -28,6 +28,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "ec/Insilico.h"
 #include "ec/EvaporativeCooling.h"
 #include "plink/plinklibhandler.h"
 #include "plink/options.h"
@@ -773,7 +774,11 @@ int main(int argc, char* argv[]) {
 				"and/or phenotype files" << endl;
 		// initialize dataset by extension
 		Dataset* ds = 0;
-		ds  = ChooseSnpsDatasetByExtension(infile);
+		// set snpFileType for EC
+		string snp_type = "plinkped";
+		if (par::read_bitfile) snp_type = "plinkbed";
+
+		ds  = ChooseSnpsDatasetByType(infile, snp_type);
 		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
 		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
 
@@ -807,7 +812,11 @@ int main(int argc, char* argv[]) {
 				"and/or phenotype files" << endl;
 		// initialize dataset by extension
 		Dataset* ds = 0;
-		ds  = ChooseSnpsDatasetByExtension(infile);
+		// set snpFileType for EC
+		string snp_type = "plinkped";
+		if (par::read_bitfile) snp_type = "plinkbed";
+
+		ds  = ChooseSnpsDatasetByType(infile, snp_type);
 		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
 		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
 
