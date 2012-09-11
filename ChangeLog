@@ -7,3 +7,15 @@ attributes in an integrative analysis
 * Evaporative Cooling (EC) machine learning feature selection
 * PLINK data formats, filtering, and several PLINK command-line
 options supported
+
+2012-09-10, v1.1
+* Fix bug in Benjamini Hochberg FDR pruning threshold and R script
+output
+* --component-matrices flag for writing component matrices for integrative
+analyses (GWAS + additional domains of biological data)
+* includes SNPxSNP (.snp.regain), NumericxNumeric (.num.regain), integrative
+(.int.regain), and entire block matrix (.block.regain)
+* Allow numeric-only analyses without requiring a GWAS data file as input
+* note: Numeric-only requires an accompanying PLINK format alternate phenotype
+file 
+* Update EC function for --ec and --gain modes
