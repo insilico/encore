@@ -26,7 +26,7 @@ typedef pair< double, pair<int, int> > mat_el;
 
 class Regain {
 	public:
-		Regain(bool compr, double sifthr, bool integrative, bool fdrpr = false);
+		Regain(bool compr, double sifthr, bool integrative, bool compo, bool fdrpr = false);
 		~Regain();
 		void run();
 		void mainEffect(int e1, bool numeric);
@@ -44,16 +44,24 @@ class Regain {
 		bool compressed;
 		// apply FDR pruning matrix?
 		bool fdrprune;
+		// write out component matrices
+		bool component;
 		// num attributes (SNPs + numeric for integrative, SNPs for normal regain)
 		int numattr;
 		// SIF interaction threshold
 		double sif_thresh;
-		// Output matrix file (used for writing regain and p-values files)
+		// Output matrix files (used for writing regain and p-values files)
 		ZOutput REGAIN_MATRIX;
+		ZOutput SNP_MATRIX;
+		ZOutput NUM_MATRIX;
+		ZOutput INT_MATRIX;
 		// additional output files
 		ofstream MEBETAS;
 		ofstream BETAS;
 		ofstream SIF;
+		ofstream SNP_SIF;
+		ofstream NUM_SIF;
+		ofstream INT_SIF;
 		// in memory arrays
 		double** regainMatrix;
 		double** regainPMatrix;

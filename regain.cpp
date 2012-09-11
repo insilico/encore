@@ -35,16 +35,17 @@
 extern Plink* PP;
 
 // constructor
-Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
+Regain::Regain(bool compr, double sifthr, bool integrative, bool compo, bool fdrpr) {
 	// set class vars to passed args
 	compressed = compr;
 	sif_thresh = sifthr;
 	intregain = integrative;
+	component = compo;
 	fdrprune = fdrpr;
 
 	// set integrative/normal regain vars
 	// additional ext for integrative
-	string ext = intregain ? ".int" : "";
+	string ext = intregain ? ".block" : "";
 	// header in betas files
 	string hdr = intregain ? "attr" : "SNP";
 	// total number of attributes
@@ -55,8 +56,8 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 	string mebeta_f = par::output_file_name + ext + ".mebetas";
 	BETAS.open(beta_f.c_str(), ios::out);
 	MEBETAS.open(mebeta_f.c_str(), ios::out);
-	cout << "Writing interaction beta values to [ " << beta_f << " ]" << endl;
-	cout << "Writing main effect beta values to [ " << mebeta_f << " ]" << endl;
+	PP->printLOG("Writing interaction beta values to [ " + beta_f + " ]\n");
+	PP->printLOG("Writing main effect beta values to [ " + mebeta_f + " ]\n");
 	BETAS.precision(6);
 	MEBETAS.precision(6);
 	// print header
@@ -78,8 +79,22 @@ Regain::Regain(bool compr, double sifthr, bool integrative, bool fdrpr) {
 
 	string sif_f = par::output_file_name + ext + ".sif";
 	SIF.open(sif_f.c_str(), ios::out);
-	cout << "Writing Cytoscape network file (SIF) to [ " << sif_f << " ]" << endl;
+	PP->printLOG("Writing Cytoscape network file (SIF) to [ " + sif_f + " ]\n");
 	SIF.precision(6);
+	if (component) {
+		string snp_sif_f = par::output_file_name + ".snp.sif";
+		string num_sif_f = par::output_file_name + ".num.sif";
+		string int_sif_f = par::output_file_name + ".int.sif";
+		SNP_SIF.open(snp_sif_f.c_str(), ios::out);
+		PP->printLOG("Writing SNP Cytoscape network file (SIF) to [ " + snp_sif_f + " ]\n");
+		SNP_SIF.precision(6);
+		NUM_SIF.open(num_sif_f.c_str(), ios::out);
+		PP->printLOG("Writing numeric Cytoscape network file (SIF) to [ " + num_sif_f + " ]\n");
+		NUM_SIF.precision(6);
+		INT_SIF.open(int_sif_f.c_str(), ios::out);
+		PP->printLOG("Writing integrative Cytoscape network file (SIF) to [ " + int_sif_f + " ]\n");
+		INT_SIF.precision(6);
+	}
 	
 	regainMatrix = new double*[numattr];
 	regainPMatrix = new double*[numattr];
@@ -205,7 +220,7 @@ void Regain::addCovariates(Model &m){
 void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 	Model * lm;
 
-	// logisic regression for binary phenotypes, linear otherwise
+	// logistic regression for binary phenotypes, linear otherwise
 	if(par::bt) {
 		LogisticModel * m = new LogisticModel(PP);
 		lm = m;
@@ -299,6 +314,30 @@ void Regain::interactionEffect(int e1, bool numeric1, int e2, bool numeric2) {
 		if (numeric2)
 			SIF << PP->nlistname[e2 - PP->nl_all] << endl;
 		else SIF << PP->locus[e2]->name << endl;
+
+		if (component) {
+			// numeric
+			if (numeric1 && numeric2) {
+				NUM_SIF << PP->nlistname[e1 - PP->nl_all] << "\t" << abs(b[b.size() - 1])  << "\t";
+				NUM_SIF << PP->nlistname[e2 - PP->nl_all] << endl;
+			}
+			// integrative
+			else if (numeric1 && !numeric2) {
+				INT_SIF << PP->nlistname[e1 - PP->nl_all] << "\t" << abs(b[b.size() - 1])  << "\t";
+				INT_SIF << PP->locus[e2]->name << endl;
+			}
+			// integrative
+			else if (!numeric1 && numeric2) {
+				INT_SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t";
+				INT_SIF << PP->nlistname[e2 - PP->nl_all] << endl;
+			}
+			// SNP
+			else {
+				SNP_SIF << PP->locus[e1]->name << "\t" << abs(b[b.size() - 1])  << "\t";
+				SNP_SIF << PP->locus[e2]->name << endl;
+			}
+		}
+
 	}
 #ifdef _OPENMP
 }
@@ -316,14 +355,15 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 	if (pvals) regainMat = regainPMatrix;
 	else regainMat = regainMatrix;
 	// write the reGAIN matrix to file named <dataset>.regain
-	string regain_matrix_f = par::output_file_name;
+	string snp_f = par::output_file_name, num_f = par::output_file_name, 
+		   int_f = par::output_file_name, regain_matrix_f = par::output_file_name;
 	// additional prefixes/extension for output filename 
 	// FDR-pruned
 	string prnpre = fdrprune ? ".pruned" : "";
 	// p-values file
 	string pvpre = pvals ? ".pvals" : "";
 	// integrative
-	string intpre = intregain ? ".int" : "";
+	string intpre = intregain ? ".block" : "";
 	// compressed/binary file
 	string tail = compressed ? ".gz" : "";
 
@@ -333,21 +373,53 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 
 	regain_matrix_f += intpre + pvpre + prnpre +  ".regain" + tail;
 
-	cout << "Writing " << fdrtext << "epistasis REGAIN " << pvtext << "matrix [ " << regain_matrix_f << " ]" << endl;
+	PP->printLOG("Writing " + fdrtext + "epistasis REGAIN " + pvtext + "matrix [ " + regain_matrix_f + " ]\n");
 	REGAIN_MATRIX.open(regain_matrix_f.c_str(), compressed);
+	if (component) {
+		snp_f += ".snp" + pvpre + prnpre +  ".regain" + tail;
+		PP->printLOG("Writing " + fdrtext + "SNP epistasis REGAIN " + pvtext + "matrix [ " + snp_f + " ]\n");
+		SNP_MATRIX.open(snp_f.c_str(), compressed);
+
+		num_f += ".num" + pvpre + prnpre +  ".regain" + tail;
+		PP->printLOG("Writing " + fdrtext + "numeric epistasis REGAIN " + pvtext + "matrix [ " + num_f + " ]\n");
+		NUM_MATRIX.open(num_f.c_str(), compressed);
+
+		int_f += ".int" + pvpre + prnpre +  ".regain" + tail;
+		PP->printLOG("Writing " + fdrtext + "integrative epistasis REGAIN " + pvtext + "matrix [ " + int_f + " ]\n");
+		INT_MATRIX.open(int_f.c_str(), compressed);
+	}
 	// write SNP column names
 	for(int cn=0; cn < PP->nl_all; ++cn) {
 		if(cn) {
 			REGAIN_MATRIX << "\t" << PP->locus[cn]->name;
+			if (component) SNP_MATRIX << "\t" << PP->locus[cn]->name;
 		}
 		else {
 			REGAIN_MATRIX << PP->locus[cn]->name;
+			if (component) SNP_MATRIX << PP->locus[cn]->name;
 		}
 	}
 	// write numeric attribute column names
-	for(int cn=0; cn < par::nlist_number; ++cn)
-			REGAIN_MATRIX << "\t" << PP->nlistname[cn];
+	for(int cn=0; cn < par::nlist_number; ++cn) {
+		if (!cn && !PP->nl_all) REGAIN_MATRIX << PP->nlistname[cn];
+		else REGAIN_MATRIX << "\t" << PP->nlistname[cn];
+		if (component) {
+			if (cn) {
+				NUM_MATRIX << "\t" << PP->nlistname[cn];
+				INT_MATRIX << "\t" << PP->nlistname[cn];
+			}
+			else {
+				NUM_MATRIX << PP->nlistname[cn];
+				INT_MATRIX << PP->nlistname[cn];
+			}
+		}
+	}
 	REGAIN_MATRIX << "\n";
+	if (component) {
+		NUM_MATRIX << "\n";
+		INT_MATRIX << "\n";
+		SNP_MATRIX << "\n";
+	}
 	// write matrix entries
 	for(int i=0; i < numattr; ++i) {
 		for(int j=i; j < numattr; ++j) {
@@ -358,23 +430,55 @@ void Regain::writeRegain(bool pvals, bool fdrprune){
 				for (int k = 0; k < j; k++)
 					tabs += "\t";
 				REGAIN_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
+				if (component) {
+					if (i < PP->nl_all) SNP_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
+					else { 
+						tabs = "";
+						for (int k = PP->nl_all; k < j; k++)
+							tabs += "\t";
+						NUM_MATRIX << tabs << dbl2str_fixed(regainMat[i][j], 6);
+					}
+				}
 			}
 			else {
 				REGAIN_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+				if (component) {
+					if (i < PP->nl_all) {
+						if (j < PP->nl_all) SNP_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+						else { 
+							if (j == PP->nl_all) 
+								INT_MATRIX << dbl2str_fixed(regainMat[i][j], 6);
+							else INT_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+						}
+					}
+					else NUM_MATRIX << "\t" << dbl2str_fixed(regainMat[i][j], 6);
+				}
 			}
 		}
 		REGAIN_MATRIX << "\n";
+		if (component) {
+			if (i < PP->nl_all) {
+				SNP_MATRIX << "\n";
+				INT_MATRIX << "\n";
+			}
+			else NUM_MATRIX << "\n";
+		}
 	}
 
 	// close output stream
 	REGAIN_MATRIX.close();
+	if (component) {
+		SNP_MATRIX.close();
+		NUM_MATRIX.close();
+		INT_MATRIX.close();
+	}
 }
 
 // Benjamini Hochberg FDR pruning - removes interaction 
 // terms from reGAIN matrix based on BH FDR threshold
 // code based on method described in All of Statistics p. 167
 void Regain::fdrPrune(double fdr){
-	cout << "Calculating Benjamini Hochberg FDR for pruning" << endl;
+	PP->printLOG("Calculating Benjamini Hochberg FDR for pruning\n");
 	int m = gainPint.size();
 	// sort gain interaction mal_el type by p-value, maintaining
 	// gainPMatrix location (row, col) with sorted values
@@ -395,23 +499,23 @@ void Regain::fdrPrune(double fdr){
 
 	// BH threshold condition not met with any p-values, so exit
 	if (R == -1){
-		cout << "No p-value meets BH threshold criteria, so nothing pruned" << endl;
+		PP->printLOG("No p-value meets BH threshold criteria, so nothing pruned\n");
 		return;
 	}
 
 	// BH rejection threshold
 	double T = gainPint[R].first;
-	cout << "BH rejection threshold: T = " + dbl2str(T) << ", R = " + int2str(R) + "" << endl;
-	cout << "Pruning reGAIN interaction terms with p-values <= T (" + dbl2str(T) + ")" << endl;
+	PP->printLOG("BH rejection threshold: T = " + dbl2str(T) + ", R = " + int2str(R) + "\n");
+	PP->printLOG("Pruning reGAIN interaction terms with p-values > T (" + dbl2str(T) + ")\n");
 
-	// now prune (set to 0.0) all values at or below R index
-	for (int i = 0; i <= R; i++) {
+	// now prune (set to 0.0) all values greater than R index
+	for (int i = R + 1; i < m; i++) {
 		pair<int,int> p = gainPint[i].second;
 		// symmetric matrix, so set [e1][e2] and [e2][e1]
 		regainMatrix[p.first][p.second] = 0.0;
 		regainMatrix[p.second][p.first] = 0.0;
 	}
-	cout << "Pruned " + int2str(R + 1) + " values from reGAIN interaction terms" << endl;
+	PP->printLOG("Pruned " + int2str(m - (R + 1)) + " values from reGAIN interaction terms\n");
 	// use threshold to write R commands to generate FDR plot 
 	writeRcomm(T, fdr);
 }
@@ -422,33 +526,39 @@ void Regain::writeRcomm(double T, double fdr){
 	RCOMM.precision(6);
 	string fdr_r_file = par::output_file_name + ".R";
 	string betas_file = par::output_file_name + ".betas";
-	cout << "Writing R commands to generate FDR plot [" << fdr_r_file << "]" << endl;
+	PP->printLOG("Writing R commands to generate FDR plot [" + fdr_r_file + "]\n");
 
 	RCOMM.open(fdr_r_file.c_str(), ios::out);
 	RCOMM << "fdrvars <- read.delim(\"" << betas_file << "\")" << endl;
+	RCOMM << "library(calibrate)" << endl;
 	RCOMM << "betas <- fdrvars$B_3" << endl;
 	RCOMM << "pvals <- fdrvars$B_3.P.VAL" << endl;
+	RCOMM << "betas <- abs(betas)" << endl;
 	RCOMM << "T <- " << T << endl;
-	RCOMM << "fdr <- " << fdr << endl;
+	RCOMM << "partition <- " << fdr << endl;
 	RCOMM << "plot(betas, -log10(pvals), type=\"n\")" << endl;
-	RCOMM << "abline(h=-log10(T), col=\"green4\" lwd=3)" << endl;
-	RCOMM << "accept <- which(-log10(pvals) > -log10(T))" << endl;
-	RCOMM << "reject <- which(-log10(pvals) <= -log10(T))" << endl;
-	RCOMM << "prnidx <- fdr * length(betas[accept])" << endl;
+	RCOMM << "abline(h=-log10(T), col=\"green4\", lwd=3)" << endl;
+	RCOMM << "accept <- which(-log10(pvals) >= -log10(T))" << endl;
+	RCOMM << "reject <- which(-log10(pvals) < -log10(T))" << endl;
+	RCOMM << "prnidx <- partition * length(betas[accept])" << endl;
 	RCOMM << "srtaccbetas <- sort(betas[accept])" << endl;
 	RCOMM << "prnval <- srtaccbetas[prnidx]" << endl;
 	RCOMM << "if(prnidx%%1!=0){" << endl;
 	RCOMM << "prnval <- (srtaccbetas[floor(prnidx)] + srtaccbetas[ceiling(prnidx)]) / 2" << endl;
 	RCOMM << "}" << endl;
 	RCOMM << "prunex <- which(betas <= prnval)" << endl;
-	RCOMM << "pruney <- which(-log10(pvals) > -log10(T))" << endl;
+	RCOMM << "pruney <- which(-log10(pvals) >= -log10(T))" << endl;
 	RCOMM << "prune <- intersect(prunex, pruney)" << endl;
+	RCOMM << "accept <- setdiff(accept, prune)" << endl;
 	RCOMM << "points(betas[accept], -log10(pvals[accept]), bg=\"green4\", pch=21)" << endl;
-	RCOMM << "points(betas[reject], -log10(pvals[reject]), bg=\"blue\", pch=21)" << endl;
-	RCOMM << "points(betas[prune], -log10(pvals[prune]), bg=\"red\", pch=21)" << endl;
-	RCOMM << "abline(v=prnval), col=\"red\", lwd=3)" << endl;
+	RCOMM << "snp1 <- fdrvars$SNP1" << endl;
+	RCOMM << "snp2 <- fdrvars$SNP2" << endl;
+	RCOMM << "textxy(betas[accept], -log10(pvals[accept]), paste(snp1, snp2, sep=\",\")[accept])" << endl;
+	RCOMM << "points(betas[reject], -log10(pvals[reject]), bg=\"blue\", pch=22)" << endl;
+	RCOMM << "points(betas[prune], -log10(pvals[prune]), bg=\"red\", pch=24)" << endl;
+	RCOMM << "abline(v=prnval, col=\"red\", lwd=3)" << endl;
 	RCOMM << "title(\"Scatter plot of -log10 transformed p-values vs. regression betas\")" << endl;
-	RCOMM << "legend(\"topleft\", inset=.05, title=\"Type\", c(\"Accepted\", \"Rejected\", \"Pruned\"), pch=c(21,21, 21), pt.bg=c(\"green4\", \"blue\", \"red\"))" << endl;
+	RCOMM << "legend(\"topleft\", inset=.05, title=\"Type\", c(\"Accepted\", \"Rejected\", \"Pruned\"), pch=c(21,22, 24), pt.bg=c(\"green4\", \"blue\", \"red\"))" << endl;
 	RCOMM.close();
 }
 

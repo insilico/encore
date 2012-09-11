@@ -28,6 +28,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "ec/Insilico.h"
 #include "ec/EvaporativeCooling.h"
 #include "plink/plinklibhandler.h"
 #include "plink/options.h"
@@ -52,6 +53,8 @@ int main(int argc, char* argv[]) {
 	string remfile = "";
 	string keepfile = "";
 	string exclfile = "";
+	// single numeric file without accompayning SNP
+	bool numonly = false;
 	// plink option defaults
 	string miss_geno = "0";
 	double ci = 0.95;
@@ -97,6 +100,9 @@ int main(int argc, char* argv[]) {
 		("regain,r", 
 		 "Calculate regression GAIN *mode*"
 		)
+			("component-matrices", 
+			 "Write component reGAIN matrices for integrative analyses"
+			)
 			("compress-matrices", 
 			 "Write binary (compressed) reGAIN matrices"
 			)
@@ -321,52 +327,64 @@ int main(int argc, char* argv[]) {
 	/********************************
 	 * Input file
 	 *******************************/
-	// require input file
-	if (!vm.count("input-file")) {
-		cerr << "Error: Must specify input file" << endl << endl << desc << endl;
-		return 1;
-	}
-
-	// ensure SNP/reGAIN file exists
-	else if (!boost::filesystem::exists(infile)) {
-		cerr << "Error: Input file " << infile << " does not exist" << endl;
-		return 1;
-	}
-
-	// Plink input file
-	else if (infile.find(".bed") != string::npos || 
-			infile.find(".ped") != string::npos) {
-		// set file root
-		vector<string> fileparts;
-		split(fileparts, infile, is_any_of("."));
-		par::fileroot = "";
-		
-		// handle files with multiple .s in the name
-		for (int i =0; i < fileparts.size() - 1; i++) {
-			par::fileroot += fileparts[i];
-			if (fileparts.size() > 2 && i < fileparts.size() - 2) 
-				par::fileroot += ".";
+	// require input file, but allow no input if a numeric file 
+	// is passeod
+		if (!vm.count("input-file")) {
+			if (!vm.count("numeric")) {
+				cerr << "Error: Must specify input file" << endl << endl << desc << endl;
+				return 1;
+			}
+			// initialize output prefix and Plink handler here if we have a numeric file
+			// without an accompanying input file
+			else {
+				numonly = true;
+				// set Plink's output file prefix
+				par::output_file_name = outfile_pref;
+				// initialize requisite Plink data structures
+				ph = new PlinkHandler();
+			}
 		}
 
-		// set Plink's output file prefix
-		par::output_file_name = outfile_pref;
-		// initialize requisite Plink data structures
-		ph = new PlinkHandler();
+		// ensure SNP/reGAIN file exists
+		else if (!boost::filesystem::exists(infile)) {
+			cerr << "Error: Input file " << infile << " does not exist" << endl;
+			return 1;
+		}
 
-		// read SNP file in PLINK
-		// binary file
-		if (infile.find(".bed") != string::npos) ph->readBedFile();
-		// plaintext file
-		else if (infile.find(".ped") != string::npos) ph->readPedFile();
+		// Plink input file
+		else if (infile.find(".bed") != string::npos || 
+				infile.find(".ped") != string::npos) {
+			// set file root
+			vector<string> fileparts;
+			split(fileparts, infile, is_any_of("."));
+			par::fileroot = "";
+			
+			// handle files with multiple .s in the name
+			for (int i =0; i < fileparts.size() - 1; i++) {
+				par::fileroot += fileparts[i];
+				if (fileparts.size() > 2 && i < fileparts.size() - 2) 
+					par::fileroot += ".";
+			}
 
-	}
+			// set Plink's output file prefix
+			par::output_file_name = outfile_pref;
+			// initialize requisite Plink data structures
+			ph = new PlinkHandler();
 
-	else if (infile.find(".gain") == string::npos &&
-			infile.find(".regain") == string::npos) {
-		cerr << "Error:  Input file must be a PLINK data file (.ped/.bed)"
-			<< " or a GAIN/reGAIN matrix (.gain/.regain)" << endl;
-		return 1;
-	}
+			// read SNP file in PLINK
+			// binary file
+			if (infile.find(".bed") != string::npos) ph->readBedFile();
+			// plaintext file
+			else if (infile.find(".ped") != string::npos) ph->readPedFile();
+
+		}
+
+		else if (infile.find(".gain") == string::npos &&
+				infile.find(".regain") == string::npos) {
+			cerr << "Error:  Input file must be a PLINK data file (.ped/.bed)"
+				<< " or a GAIN/reGAIN matrix (.gain/.regain)" << endl;
+			return 1;
+		}
 
 	/********************************
 	 * Allele frequencies
@@ -435,9 +453,6 @@ int main(int argc, char* argv[]) {
 
 	/* end Plink filtering options ******************************/
 
-	// additional PLINK setup
-	if (!vm.count("snprank"))
-		ph->initData();
 
 	/********************************
 	 * Numeric file
@@ -456,8 +471,14 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
+		// numeric only mode (no SNP file) must include an alternate phenotype file
+		else if (numonly && !vm.count("pheno")) {
+			cerr << "Error: Numeric only analysis must include an alternate phenotype file (--pheno)" << endl;
+			return 1;
+		}
+
 		// read the numeric attributes using PLINK
-		else ph->readNumFile(numfile);
+		else ph->readNumFile(numfile, numonly);
 
 	}
 
@@ -500,7 +521,10 @@ int main(int argc, char* argv[]) {
 		}
 
 		// read alternate phenotype file using PLINK
-		else ph->readPhenoFile(phenofile);
+		else {
+			ph->readPhenoFile(phenofile);
+
+		}
 	}
 
 	/********************************
@@ -601,6 +625,10 @@ int main(int argc, char* argv[]) {
 		else ph->readKeepFile(keepfile);
 	}
 
+	// additional PLINK setup
+	if (!vm.count("snprank"))
+		ph->initData();
+
 	/********************************
 	 * Filter based on founders
 	 *******************************/
@@ -611,6 +639,24 @@ int main(int argc, char* argv[]) {
 	 ********************************/
 	if (!vm["gamma"].defaulted() && !vm.count("snprank")) {
 		cerr << "Error: --gamma must be used with --snprank" << endl << endl <<
+			desc << endl;
+		return 1;
+	}
+
+	if (vm.count("component-matrices") && !vm.count("regain")) {
+		cerr << "Error: --component-matrices must be used with --regain" << endl << endl <<
+			desc << endl;
+		return 1;
+	}
+
+	if (vm.count("component-matrices") && !vm.count("input-file")) {
+		cerr << "Error: --component-matrices must include an input SNP file (--input-file)" << endl << endl <<
+			desc << endl;
+		return 1;
+	}
+
+	if (vm.count("component-matrices") && !vm.count("numeric")) {
+		cerr << "Error: --component-matrices must include an numeric file (--numeric)" << endl << endl <<
 			desc << endl;
 		return 1;
 	}
@@ -678,11 +724,13 @@ int main(int argc, char* argv[]) {
 		ph->setInd();
 		bool fdrprune = vm.count("fdr-prune");
 		Regain* r;
-		// if --numeric passed, create an integrative regain object
-		if (vm.count("numeric"))
-			r = new Regain(vm.count("compress-matrices"), sif_thresh, true,  fdrprune);
-		else 
-			r = new Regain(vm.count("compress-matrices"), sif_thresh, false, fdrprune);
+		// set regain specific sub-options
+		bool compressed = false, component = false, intregain = false;
+		if (vm.count("compress-matrices")) compressed = true;
+		if (vm.count("numeric")) intregain = true;
+		if (vm.count("component-matrices")) component = true;
+
+		r = new Regain(compressed, sif_thresh, intregain, component, fdrprune);
 		r->run();
 		if (fdrprune){
 			r->writeRegain(false);
@@ -726,7 +774,11 @@ int main(int argc, char* argv[]) {
 				"and/or phenotype files" << endl;
 		// initialize dataset by extension
 		Dataset* ds = 0;
-		ds  = ChooseSnpsDatasetByExtension(infile);
+		// set snpFileType for EC
+		string snp_type = "plinkped";
+		if (par::read_bitfile) snp_type = "plinkbed";
+
+		ds  = ChooseSnpsDatasetByType(infile, snp_type);
 		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
 		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
 
@@ -760,7 +812,11 @@ int main(int argc, char* argv[]) {
 				"and/or phenotype files" << endl;
 		// initialize dataset by extension
 		Dataset* ds = 0;
-		ds  = ChooseSnpsDatasetByExtension(infile);
+		// set snpFileType for EC
+		string snp_type = "plinkped";
+		if (par::read_bitfile) snp_type = "plinkbed";
+
+		ds  = ChooseSnpsDatasetByType(infile, snp_type);
 		bool loaded = ds->LoadDataset(infile, "", phenofile, ind_ids);
 		if (!loaded) cerr << "Error: Failure to load dataset for analysis" << endl;
 
